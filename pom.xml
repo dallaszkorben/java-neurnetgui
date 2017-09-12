@@ -8,6 +8,19 @@
   <name>hu.akoel.neurnetgui</name>
   <url>http://maven.apache.org</url>
 
+  <build>
+  	<resources>
+  		<resource>
+  			<directory>language</directory>
+  			<filtering>false</filtering>
+  		</resource>
+  		<resource>
+  			<directory>settings</directory>
+  			<filtering>false</filtering>
+  		</resource>
+  	</resources>
+  </build>
+
   <dependencies>
     <dependency>
       <groupId>junit</groupId>

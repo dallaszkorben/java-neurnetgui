@@ -6,17 +6,36 @@ public class NeurmetGUI {
 
 	public static void main( String[] args ){
 		
-		final String version = "1.0.0";
+		String version = "1.0.0";
 
 		Common.loadSettings();
 		
+		DataControl dataControl = new DataControl();
+	
+//		SwingUtilities.invokeLater( new InvokeLaterRunnable(dataControl, version) );
 		SwingUtilities.invokeLater( new Runnable(){
 
 			public void run() {
-				new MainPanel( version );
+				String version = "1.0.0";
+				DataControl dataControl = new DataControl();
+				new MainPanel(dataControl, version);
 				
 			}
 			
 		});
+		
+	}
+	
+}
+
+class InvokeLaterRunnable implements Runnable {
+	private String version;
+	private DataControl dataControl;
+	public InvokeLaterRunnable(DataControl dataControl, String version){
+		this.dataControl = dataControl;
+		this.version = version;
+	}
+	public void run() {
+		new MainPanel(dataControl, version);
 	}
 }

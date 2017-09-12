@@ -3,6 +3,8 @@ package hu.akoel.neurnetgui;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.ResourceBundle;
@@ -15,6 +17,11 @@ public class Common {
 	
 	private static Locale currentLocale = new Locale(DEFAULT_LANGUAGE, DEFAULT_COUNTRY);
 	private static ResourceBundle messages = ResourceBundle.getBundle( LANGUAGE_BASENAME, currentLocale );
+	
+	public static String getFormattedDecimal( double value, String format ){
+		NumberFormat formatter = new DecimalFormat( format );     
+		return formatter.format( value );
+	}
 	
 	public static void loadSettings(){
 		Properties prop = new Properties();
