@@ -29,22 +29,26 @@ import hu.akoel.neurnet.resultiterator.IResultIterator;
 public class TrainingControlPanel extends JPanel{
 	private static final long serialVersionUID = 8909396748536386035L;
 	
-	private DataControl dataControl;
+	private DataModel dataModel;
 	private Network network;
 	private DataHandler trainingDataHandler;
 	
 	private static final int LOOP_FIELD_COLUMNS = 9;
 	private static final int MSE_FIELD_COLUMNS = 7;
+	private static final int LEARNINGRATE_FIELD_COLUMNS = 6;
+	private static final int MOMENTUM_FIELD_COLUMNS = 6;
 
+	public JTextField momentumField;
+	public JTextField learningRateField;
 	public JTextField actualMSEField;
 	public JTextField actualLoopField;
 
-	public TrainingControlPanel(Network network, DataHandler trainingDataHandler, DataControl dataControl){
+	public TrainingControlPanel(Network network, DataHandler trainingDataHandler, DataModel dataModel){
 		super();
 		
 		this.network = network;
 		this.trainingDataHandler = trainingDataHandler;
-		this.dataControl = dataControl;
+		this.dataModel = dataModel;
 		
 		this.setBorder( BorderFactory.createLoweredBevelBorder());
 		this.setLayout( new GridBagLayout());
@@ -55,21 +59,39 @@ public class TrainingControlPanel extends JPanel{
 		// Define fields
 		//
 		
+		// Learning Rate
+		JLabel learningRateLabel = new JLabel( Common.getTranslated("control.label.learningrate") + ":");
+		JTextField learningRateField = new JTextField();
+		learningRateField.setEditable( true );
+		learningRateField.setColumns(LEARNINGRATE_FIELD_COLUMNS);
+		learningRateField.setText( String.valueOf( dataModel.learningRate.getValue() ) );		
+		learningRateField.setInputVerifier( new DoubleVerifier( dataModel.learningRate, 0.0, 1.0 ) );
+		
+		// Momentum
+		JLabel momentumLabel = new JLabel( Common.getTranslated("control.label.momentum") + ":");
+		JTextField momentumField = new JTextField();
+		momentumField.setEditable( true );
+		momentumField.setColumns(MOMENTUM_FIELD_COLUMNS);
+		momentumField.setText( String.valueOf( dataModel.momentum .getValue()) );		
+		momentumField.setInputVerifier( new DoubleVerifier( dataModel.momentum, 0.0, 1.0 ) );
+		
 		// Max Loop
 		JLabel maxLoopLabel = new JLabel( Common.getTranslated("control.label.maxtrainingloop") + ":");
 		JTextField maxLoopField = new JTextField();
 		maxLoopField.setEditable( true );
 		maxLoopField.setColumns(LOOP_FIELD_COLUMNS);
-		maxLoopField.setText( String.valueOf( dataControl.DEFAULT_MAXLOOP ) );		
-		maxLoopField.setInputVerifier( new IntegerVerifier( dataControl.maxTrainingLoop, 1 ) );
+		maxLoopField.setText( String.valueOf( dataModel.maxTrainingLoop.getValue() ) );		
+		maxLoopField.setInputVerifier( new IntegerVerifier( dataModel.maxTrainingLoop, 1 ) );
 		
 		// Mean Squared Error (MSE)
 		JLabel maxMSELabel = new JLabel( Common.getTranslated("control.label.maxmse") + ":");
 		JTextField maxMSEField = new JTextField();
 		maxMSEField.setEditable( true );
-		maxMSEField.setColumns(MSE_FIELD_COLUMNS);
-		maxMSEField.setText( String.valueOf( dataControl.DEFAULT_MAXMSE ) );		
-		maxMSEField.setInputVerifier( new DoubleVerifier( dataControl.maxMeanSquaredError, 0.0 ) );
+		maxMSEField.setColumns(MSE_FIELD_COLUMNS);		
+		String stringFormat = String.valueOf( dataModel.maxMeanSquaredError.getValue() );
+		stringFormat = "#0." + new String(new char[stringFormat.length()]).replace('\0', '0');		
+		maxMSEField.setText( String.valueOf( Common.getFormattedDecimal( dataModel.maxMeanSquaredError.getValue(), stringFormat ) ) );		
+		maxMSEField.setInputVerifier( new DoubleVerifier( dataModel.maxMeanSquaredError, 0.0 ) );
 
 		// actual Loop
 		JLabel actualLoopLabel = new JLabel( Common.getTranslated("control.label.actualtrainingloop") + ":");
@@ -93,15 +115,48 @@ public class TrainingControlPanel extends JPanel{
 		stopButton.setEnabled(false);
 		
 		stopButton.addActionListener( new StopButtonListener(network) );
-		startButton.addActionListener( new StartButtonListener(network, trainingDataHandler, dataControl, startButton, stopButton) );
+		startButton.addActionListener( new StartButtonListener(network, trainingDataHandler, dataModel, startButton, stopButton) );
 
 		
 		//
 		// Place fields
 		//
+		//Alpha
+		int row = 0;
+		controlConstraints.gridx = 0;
+		controlConstraints.gridy = row;
+		controlConstraints.ipadx = 10;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( learningRateLabel, controlConstraints );
+		
+		controlConstraints.gridx = 1;
+		controlConstraints.gridy = row;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( learningRateField, controlConstraints );
+
+		//Momentum
+		row++;
+		controlConstraints.gridx = 0;
+		controlConstraints.gridy = row;
+		controlConstraints.ipadx = 10;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( momentumLabel, controlConstraints );
+		
+		controlConstraints.gridx = 1;
+		controlConstraints.gridy = row;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( momentumField, controlConstraints );
 		
 		//Max loop
-		int row = 0;
+		row++;
 		controlConstraints.gridx = 0;
 		controlConstraints.gridy = row;
 		controlConstraints.ipadx = 10;
@@ -203,7 +258,7 @@ public class TrainingControlPanel extends JPanel{
 		controlConstraints.fill = GridBagConstraints.VERTICAL;
 		this.add(new JLabel(), controlConstraints );
 		
-		this.network.setTrainingCycleListener( new TrainingLoopListener( dataControl, actualLoopField, actualMSEField ) );
+		this.network.setTrainingCycleListener( new TrainingLoopListener( dataModel, actualLoopField, actualMSEField ) );
 		this.network.setActivityListener( new TrainingActivitiListener( startButton, stopButton ) );
 		
 	}
@@ -217,13 +272,13 @@ public class TrainingControlPanel extends JPanel{
 class StartButtonListener implements ActionListener {
 	private Network network;
 	private DataHandler trainingDataHandler;
-	private DataControl dataControl;
+	private DataModel dataModel;
 	private JButton startButton;
 	private JButton stopButton;
-	public StartButtonListener(Network network, DataHandler trainingDataHandler, DataControl dataControl, JButton startButton, JButton stopButton ){
+	public StartButtonListener(Network network, DataHandler trainingDataHandler, DataModel dataModel, JButton startButton, JButton stopButton ){
 		this.network = network;
 		this.trainingDataHandler = trainingDataHandler;
-		this.dataControl = dataControl;
+		this.dataModel = dataModel;
 		this.startButton = startButton;
 		this.stopButton = stopButton;
 	}
@@ -231,8 +286,10 @@ class StartButtonListener implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		startButton.setEnabled( false );
 		stopButton.setEnabled(true);
-		network.setMaxTrainingLoop( dataControl.maxTrainingLoop.getValue() );
-		network.setMaxTotalMeanSquareError( dataControl.maxMeanSquaredError.getValue());
+		network.setLearningRate( dataModel.learningRate.getValue());
+		network.setMomentum( dataModel.momentum.getValue() );
+		network.setMaxTrainingLoop( dataModel.maxTrainingLoop.getValue() );
+		network.setMaxTotalMeanSquareError( dataModel.maxMeanSquaredError.getValue());
 		
 		StartTrainingRunnable startingRunnable = new StartTrainingRunnable(network, trainingDataHandler);
 		startingRunnable.start();
@@ -273,11 +330,11 @@ class StartTrainingRunnable extends Thread {
  *
  */
 class TrainingLoopListener implements ICycleListener{
-	private DataControl dataControl;
+	private DataModel dataControl;
 	private JTextField actualLoop;
 	private JTextField actualMSE;
-	public TrainingLoopListener( DataControl dataControl, JTextField actualLoop, JTextField actualMSE ){
-		this.dataControl = dataControl;
+	public TrainingLoopListener( DataModel dataModel, JTextField actualLoop, JTextField actualMSE ){
+		this.dataControl = dataModel;
 		this.actualLoop = actualLoop;
 		this.actualMSE = actualMSE;
 	}

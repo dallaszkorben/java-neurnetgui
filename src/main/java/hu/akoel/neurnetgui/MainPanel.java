@@ -30,9 +30,9 @@ public class MainPanel extends JFrame{
 	private static final int DEFAULT_HEIGHT = 600; 
 	
 	private String version;
-	private DataControl dataControl;
+	private DataModel dataControl;
 	
-	public MainPanel( DataControl dataControl, String version ){
+	public MainPanel( DataModel dataControl, String version ){
     	this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     	
     	this.dataControl = dataControl;

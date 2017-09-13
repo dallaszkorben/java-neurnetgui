@@ -10,14 +10,14 @@ public class NeurmetGUI {
 
 		Common.loadSettings();
 		
-		DataControl dataControl = new DataControl();
+		DataModel dataControl = new DataModel();
 	
 //		SwingUtilities.invokeLater( new InvokeLaterRunnable(dataControl, version) );
 		SwingUtilities.invokeLater( new Runnable(){
 
 			public void run() {
 				String version = "1.0.0";
-				DataControl dataControl = new DataControl();
+				DataModel dataControl = new DataModel();
 				new MainPanel(dataControl, version);
 				
 			}
@@ -30,8 +30,8 @@ public class NeurmetGUI {
 
 class InvokeLaterRunnable implements Runnable {
 	private String version;
-	private DataControl dataControl;
-	public InvokeLaterRunnable(DataControl dataControl, String version){
+	private DataModel dataControl;
+	public InvokeLaterRunnable(DataModel dataControl, String version){
 		this.dataControl = dataControl;
 		this.version = version;
 	}
