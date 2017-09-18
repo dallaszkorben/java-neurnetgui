@@ -3,6 +3,7 @@ package hu.akoel.neurnetgui;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -17,6 +18,18 @@ public class Common {
 	
 	private static Locale currentLocale = new Locale(DEFAULT_LANGUAGE, DEFAULT_COUNTRY);
 	private static ResourceBundle messages = ResourceBundle.getBundle( LANGUAGE_BASENAME, currentLocale );
+	
+/*	public static String getDecimalFormat( double value, int extraZeros ){		
+		return 
+				"#" + 
+				(new BigDecimal(value)).toPlainString().replaceFirst("[1-9][0-9]+$", "") + 
+				new String(new char[extraZeros + 1]).replace('\0', '0');
+	}
+*/	
+	public static String getDecimalFormat( String pattern, int extraZeros ){
+		//"#0.00" + new String(new char[pattern.length()]).replace('\0', '0');
+		return "#" + pattern.replaceAll("\\d", "0") + new String(new char[extraZeros]).replace('\0', '0');		
+	}
 	
 	public static String getFormattedDecimal( double value, String format ){
 		NumberFormat formatter = new DecimalFormat( format );     

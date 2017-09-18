@@ -33,5 +33,10 @@
       <artifactId>neurnet</artifactId>
       <version>1.0.0</version>
     </dependency>
+	<dependency>
+      <groupId>hu.akoel.mgu</groupId>
+      <artifactId>mgu</artifactId>
+      <version>3.0.0</version>
+    </dependency>    
   </dependencies>
 </project>
