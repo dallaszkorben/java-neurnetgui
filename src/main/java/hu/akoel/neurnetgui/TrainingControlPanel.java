@@ -2,9 +2,11 @@ package hu.akoel.neurnetgui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import hu.akoel.mgu.grid.Grid;
 import hu.akoel.mgu.values.DeltaValue;
 import hu.akoel.mgu.values.PixelPerUnitValue;
 import hu.akoel.mgu.values.PositionValue;
+import hu.akoel.mgu.values.SizeValue;
 import hu.akoel.mgu.values.TranslateValue;
 import hu.akoel.mgu.values.ZoomRateValue;
 import hu.akoel.neurnet.handlers.DataHandler;
@@ -50,6 +53,7 @@ public class TrainingControlPanel extends JPanel{
 	private static final int MSE_FIELD_COLUMNS = 7;
 	private static final int LEARNINGRATE_FIELD_COLUMNS = 6;
 	private static final int MOMENTUM_FIELD_COLUMNS = 6;
+	private static final int LOOPSAFTERHANDLEERROR_FIELD_COLUMNS = 6;
 	
 	private ArrayList<ErrorGraphDataPairs> errorGraphDataList = new ArrayList<ErrorGraphDataPairs>();
 	
@@ -57,6 +61,7 @@ public class TrainingControlPanel extends JPanel{
 	public JTextField learningRateField;
 	public JTextField actualMSEField;
 	public JTextField actualLoopField;
+	public JTextField loopsAfterHandleErrorField;
 	public MCanvas errorCanvas;
 
 	public TrainingControlPanel(Network network, DataHandler trainingDataHandler, DataModel dataModel){
@@ -103,28 +108,31 @@ public class TrainingControlPanel extends JPanel{
 		JTextField maxMSEField = new JTextField();
 		maxMSEField.setEditable( true );
 		maxMSEField.setColumns(MSE_FIELD_COLUMNS);		
-
-		
-		//String stringFormat = String.valueOf( dataModel.maxMeanSquaredError.getValue() );
-		//String stringFormat = Common.getDecimalFormat( dataModel.maxMeanSquaredError.getValue(), 0 );
-		//stringFormat = "#0." + new String(new char[stringFormat.length()]).replace('\0', '0');		
-		//maxMSEField.setText( String.valueOf( Common.getFormattedDecimal( dataModel.maxMeanSquaredError.getValue(), stringFormat ) ) );
 		maxMSEField.setText( dataModel.maxMeanSquaredError.getValue() );
-		//maxMSEField.setInputVerifier( new DoubleVerifier( dataModel.maxMeanSquaredError, 0.0 ) );
 		maxMSEField.setInputVerifier( new DoubleStringVerifier( dataModel.maxMeanSquaredError, 0.0, 0.01 ) );
+
+		// Loop After handle Error
+		JLabel loopsAfterHandleErrorLabel = new JLabel( Common.getTranslated("control.label.loopsafterhandleerror") + ":");
+		loopsAfterHandleErrorField = new JTextField();
+		loopsAfterHandleErrorField.setEditable( true );
+		loopsAfterHandleErrorField.setColumns(LOOPSAFTERHANDLEERROR_FIELD_COLUMNS);
+		loopsAfterHandleErrorField.setText( String.valueOf( dataModel.loopsAfterHandleError.getValue() ) );
+		loopsAfterHandleErrorField.setInputVerifier( new IntegerVerifier( dataModel.loopsAfterHandleError, 100, dataModel.maxTrainingLoop.getValue() ) );
 
 		// actual Loop
 		JLabel actualLoopLabel = new JLabel( Common.getTranslated("control.label.actualtrainingloop") + ":");
 		actualLoopField = new JTextField();
 		actualLoopField.setEditable( false );
+		actualLoopField.setEnabled( false );
 		actualLoopField.setColumns(LOOP_FIELD_COLUMNS);
 
 		// Mean Squared Error (MSE)
 		JLabel actualMSELabel = new JLabel( Common.getTranslated("control.label.actualmse") + ":");
 		actualMSEField = new JTextField();
 		actualMSEField.setEditable( false );
+		actualMSEField.setEnabled( false );
 		actualMSEField.setColumns(MSE_FIELD_COLUMNS);
-		
+
 		// Start button
 		JButton startButton = new JButton( Common.getTranslated("control.button.start") );
 		startButton.setBackground( Color.green );
@@ -132,14 +140,20 @@ public class TrainingControlPanel extends JPanel{
 		// Stop button
 		JButton stopButton = new JButton( Common.getTranslated("control.button.stop") );
 		stopButton.setBackground( Color.red );
-		stopButton.setEnabled(false);
+		stopButton.setEnabled( false );
+
+		// Reset button
+		JButton resetWeightsButton = new JButton( Common.getTranslated("control.button.resetweights") );
+		resetWeightsButton.setBackground( Color.yellow );
+		resetWeightsButton.setEnabled( true );
 		
 		stopButton.addActionListener( new StopButtonListener(network) );
-		startButton.addActionListener( new StartButtonListener(network, trainingDataHandler, dataModel, startButton, stopButton, errorGraphDataList ) );
+		startButton.addActionListener( new StartButtonListener(network, trainingDataHandler, dataModel, errorGraphDataList, startButton, stopButton, resetWeightsButton ) );
+		resetWeightsButton.addActionListener( new ResetWeightsButtonListener(network)); 
 
 		// Error graph		
-		errorCanvas = ErrorGraph.getCanvas( dataModel.handleErrorCounter, Double.valueOf( dataModel.maxMeanSquaredError.getValue() ) );
-		errorCanvas.addPainterListenerToHighest( new ErrorGraphPainterListener(errorGraphDataList), MCanvas.Level.ABOVE);
+		errorCanvas = ErrorGraph.getCanvas( dataModel.loopsAfterHandleError.getValue(), Double.valueOf( dataModel.maxMeanSquaredError.getValue() ) );
+		errorCanvas.addPainterListenerToHighest( new ErrorGraphPainterListener(network, errorGraphDataList), MCanvas.Level.ABOVE);
 		
 		//
 		// Place fields
@@ -211,7 +225,24 @@ public class TrainingControlPanel extends JPanel{
 		controlConstraints.weighty = 0;
 		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
 		this.add( maxMSEField, controlConstraints );
+
+		// Loop After handle Error
+		row++;
+		controlConstraints.gridx = 0;
+		controlConstraints.gridy = row;
+		controlConstraints.ipadx = 10;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( loopsAfterHandleErrorLabel, controlConstraints );
 		
+		controlConstraints.gridx = 1;
+		controlConstraints.gridy = row;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( loopsAfterHandleErrorField, controlConstraints );
+
 		// Actual loop
 		row++;
 		controlConstraints.gridx = 0;
@@ -245,7 +276,7 @@ public class TrainingControlPanel extends JPanel{
 		controlConstraints.weighty = 0;
 		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
 		this.add( actualMSEField, controlConstraints );
-
+		
 		// Start button
 		row++;
 		controlConstraints.gridx = 0;
@@ -267,6 +298,17 @@ public class TrainingControlPanel extends JPanel{
 		controlConstraints.weighty = 0;
 		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
 		this.add( stopButton, controlConstraints );
+		
+		// Reset Weights button
+		row++;
+		controlConstraints.gridx = 0;
+		controlConstraints.gridy = row;
+		controlConstraints.ipadx = 0;
+		controlConstraints.gridwidth = 2;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( resetWeightsButton, controlConstraints );
 		
 		// Graph
 		
@@ -293,7 +335,7 @@ public class TrainingControlPanel extends JPanel{
 		//this.add(new JLabel(), controlConstraints );
 		
 		this.network.setTrainingLoopListener( new TrainingLoopListener( dataModel, actualLoopField, actualMSEField, errorCanvas, errorGraphDataList ) );
-		this.network.setActivityListener( new TrainingActivitiListener( startButton, stopButton ) );
+		this.network.setActivityListener( new TrainingActivitiListener( startButton, stopButton, resetWeightsButton ) );
 		
 	}	
 }
@@ -302,16 +344,18 @@ public class TrainingControlPanel extends JPanel{
 
 class ErrorGraphPainterListener implements PainterListener{
 	private ArrayList<ErrorGraphDataPairs> errorGraphDataList;
+	private Network network;
 	
-	public ErrorGraphPainterListener(ArrayList<ErrorGraphDataPairs> errorGraphDataList){
+	public ErrorGraphPainterListener(Network network, ArrayList<ErrorGraphDataPairs> errorGraphDataList){
+		this.network = network;
 		this.errorGraphDataList = errorGraphDataList;
 	}
 	
 	public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
 		Iterator<ErrorGraphDataPairs> graphListIterator = errorGraphDataList.iterator();
 
-		g2.setColor( Color.YELLOW );
-		g2.setStroke( new BasicStroke(3));
+		g2.setColor( Color.red );
+		g2.setStroke( new BasicStroke(1));
 		
 		PositionValue previous = new PositionValue(0, 0);
 		if( graphListIterator.hasNext() ){
@@ -327,9 +371,25 @@ class ErrorGraphPainterListener implements PainterListener{
 			previous.setX(x);
 			previous.setY(y);
 		}
+		
+		// Transform the Canvas to have the pencil to the right-bottom(1/4 height) position
+		if( !network.isTrainingStopped() && !errorGraphDataList.isEmpty() ){
+			double lastDataValue = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getValue();
+			double neededYDifference = canvas.getWorldYLengthByPixel( canvas.getHeight() ) / 4;
+			double yOffset = neededYDifference -lastDataValue;
+			
+			double lastDataPosition = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getLoop();
+			int xDiffInPixel = canvas.getWidth() - 15;
+			double neededXDifference = canvas.getWorldXLengthByPixel( xDiffInPixel );
+			double xOffset = neededXDifference - lastDataPosition;			
+
+			canvas.setWorldTranslateX( xOffset );
+			canvas.setWorldTranslateY( yOffset );
+		}
 	}
 
 	public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {
+		//canvas.moveLeft( 1 );
 	}	
 }
 
@@ -356,12 +416,10 @@ class ErrorGraph{
 				new PixelPerUnitValue(1.0/smallestVisibleLoop, 1.0/smallestVisibleError),				                                                                      
 				new ZoomRateValue(1.2, 1.2));		
 		
-		TranslateValue positionToMiddle = new TranslateValue(3000000, 0.00005);
+		TranslateValue positionToMiddle = null;//new TranslateValue(3000000, 0.00005);
 		
 		//SizeValue boundSize = new SizeValue(0.0, 0.0, 100000000.0, 1.0);
 		myCanvas = new MCanvas(border, color, pppU, positionToMiddle );
-		
-		
 
 		//Grid
 		Color gridColor = new Color(0, 55, 0);
@@ -376,30 +434,29 @@ class ErrorGraph{
 		//Axis		
 		Color axiscolor = new Color(0, 100, 0);
 		int axisWidthInPixel = 1;
-		AxisPosition axisPosition = Axis.AxisPosition.AT_ZERO_ZERO;
+		AxisPosition axisPosition = Axis.AxisPosition.AT_LEFT_BOTTOM;
 		Axis.PainterPosition painterPosition = Axis.PainterPosition.HIGHEST;
 		Axis axis = new Axis(myCanvas, axisPosition, axiscolor, axisWidthInPixel, painterPosition);
 		axis.turnOn();
 		
-/*		myCanvas.addPainterListenerToDeepest( new PainterListener() {
+		myCanvas.addPainterListenerToDeepest( new PainterListener() {
 			
 			public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
+				double x0 = 0.0;//canvas.getWorldXByPixel(0);
+				double x1 = canvas.getWorldXByPixel( canvas.getWidth() - 1);
+				double y0 = 0.0;
+				double y1 = canvas.getWorldYByPixel( 0 );
+				g2.setColor( Color.green );
+				g2.setStroke( new BasicStroke(1));
+				g2.drawLine( x0, y0, x1, y0 );
+				g2.drawLine( x0, y0, x0, y1 );
 			}
 			
-			public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {
-				int x0 = 0;
-				int y0 = 0;
-				g2.setColor( Color.YELLOW );
-				g2.setStroke( new BasicStroke(3));
-				g2.drawLine(x0-5, y0, x0+5, y0);
-				g2.drawLine(x0, y0-5, x0, y0+5);						
+			public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {					
 			}
-		}, MCanvas.Level.UNDER );
+		}, MCanvas.Level.ABOVE );
 		
-		myCanvas.repaint();
-
-		
-*/				
+		myCanvas.repaint();				
 	}
 	
 	public static MCanvas getCanvas( int handleErrorCounter, double maxMeanSquaredError ){
@@ -417,20 +474,24 @@ class StartButtonListener implements ActionListener {
 	private DataModel dataModel;
 	private JButton startButton;
 	private JButton stopButton;
+	private JButton resetWeightsButon;
 	private ArrayList<ErrorGraphDataPairs> errorGraphDataList;
 	
-	public StartButtonListener(Network network, DataHandler trainingDataHandler, DataModel dataModel, JButton startButton, JButton stopButton, ArrayList<ErrorGraphDataPairs> errorGraphDataList ){
+	public StartButtonListener(Network network, DataHandler trainingDataHandler, DataModel dataModel, ArrayList<ErrorGraphDataPairs> errorGraphDataList, JButton startButton, JButton stopButton, JButton resetWeightsButon ){
 		this.network = network;
 		this.trainingDataHandler = trainingDataHandler;
 		this.dataModel = dataModel;
+		this.errorGraphDataList = errorGraphDataList;
 		this.startButton = startButton;
 		this.stopButton = stopButton;
-		this.errorGraphDataList = errorGraphDataList;
+		this.resetWeightsButon = resetWeightsButon;
 	}
 	
 	public void actionPerformed(ActionEvent e) {
 		startButton.setEnabled( false );
 		stopButton.setEnabled(true);
+		resetWeightsButon.setEnabled( false );
+		
 		network.setLearningRate( dataModel.learningRate.getValue());
 		network.setMomentum( dataModel.momentum.getValue() );
 		network.setMaxTrainingLoop( dataModel.maxTrainingLoop.getValue() );
@@ -453,6 +514,20 @@ class StopButtonListener implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		network.stopTraining();
 	}	
+}
+
+class ResetWeightsButtonListener implements ActionListener{
+
+	private Network network;
+
+	public ResetWeightsButtonListener( Network network ){
+		this.network = network;
+	}
+	
+	public void actionPerformed(ActionEvent e) {
+		network.resetWeights();
+	}	
+	
 }
 
 class StartTrainingRunnable extends Thread {
@@ -501,18 +576,33 @@ class TrainingLoopListener implements ILoopListener{
 	}
 	
 	public void handlerError(int loopCounter, double totalMeanSquareError, ArrayList<IResultIterator> resultIteratorArray) {
-		if( loopCounter % dataModel.handleErrorCounter == 0 ){
+		if( loopCounter % dataModel.loopsAfterHandleError.getValue() == 0 ){
 			this.actualLoop.setText( String.valueOf( offset + loopCounter ) );
 			//String stringFormat = String.valueOf( offset + dataModel.maxMeanSquaredError.getValue() );
 				
 			//stringFormat = "#0.00" + new String(new char[stringFormat.length()]).replace('\0', '0');
 
 			String stringFormat =Common.getDecimalFormat(dataModel.maxMeanSquaredError.getValue(), 2); 
-			this.actualMSE.setText( String.valueOf( Common.getFormattedDecimal( totalMeanSquareError, stringFormat ) ) );
-			
+			this.actualMSE.setText( String.valueOf( Common.getFormattedDecimal( totalMeanSquareError, stringFormat ) ) );			
 			
 			errorGraphDataList.add( new ErrorGraphDataPairs( offset + loopCounter, totalMeanSquareError ));
+
+/*			//Canvas transformation to be at right-middle the actual active point
+			if( !errorGraphDataList.isEmpty() ){
+				double lastDataValue = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getValue();
+
+				double lastDataPosition = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getLoop();
+				int lastPixelPosition = errorCanvas.getWidth() - 15;
+				double lastWorldPosition = errorCanvas.getWorldXLengthByPixel( lastPixelPosition );
+				double difference = lastWorldPosition - lastDataPosition;			
+
+				//errorCanvas.setWorldTranslateX( errorCanvas.getWorldXLengthByPixel( errorCanvas.getWidth() ) - lastDataPosition );
+				errorCanvas.setWorldTranslateX( difference );
+				errorCanvas.setWorldTranslateY( errorCanvas.getWorldYLengthByPixel( errorCanvas.getHeight() ) / 2 -lastDataValue );
+			}
+*/			
 			errorCanvas.revalidateAndRepaintCoreCanvas();
+
 		}
 	}
 }
@@ -546,15 +636,19 @@ class ErrorGraphDataPairs{
 class TrainingActivitiListener implements IActivityListener{
 	private JButton startButton;
 	private JButton stopButton;
-	public TrainingActivitiListener( JButton startButton, JButton stopButton ){
+	private JButton resetWeightButton;
+	
+	public TrainingActivitiListener( JButton startButton, JButton stopButton, JButton resetWeightButton ){
 		this.startButton = startButton;
 		this.stopButton = stopButton;				
+		this.resetWeightButton = resetWeightButton;
 	}
 	public void started() {		
 	}
 	public void stopped() {
 		stopButton.setEnabled( false );
-		startButton.setEnabled( true );		
+		startButton.setEnabled( true );	
+		resetWeightButton.setEnabled( true );
 	}
 }
 
