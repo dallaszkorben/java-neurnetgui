@@ -1,4 +1,4 @@
-package hu.akoel.neurnetgui;
+package hu.akoel.neurnetgui.tab;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -38,11 +38,13 @@ import hu.akoel.neurnet.listeners.IActivityListener;
 import hu.akoel.neurnet.listeners.ILoopListener;
 import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnet.resultiterator.IResultIterator;
+import hu.akoel.neurnetgui.DataModel;
+import hu.akoel.neurnetgui.MutableDouble;
+import hu.akoel.neurnetgui.MutableInteger;
+import hu.akoel.neurnetgui.MutableString;
+import hu.akoel.neurnetgui.accessories.Common;
 
-
-
-
-public class TrainingControlPanel extends JPanel{
+public class TrainingTab extends JPanel{
 	private static final long serialVersionUID = 8909396748536386035L;
 	
 	private DataModel dataModel;
@@ -64,7 +66,7 @@ public class TrainingControlPanel extends JPanel{
 	public JTextField loopsAfterHandleErrorField;
 	public MCanvas errorCanvas;
 
-	public TrainingControlPanel(Network network, DataHandler trainingDataHandler, DataModel dataModel){
+	public TrainingTab(Network network, DataHandler trainingDataHandler, DataModel dataModel){
 		super();
 		
 		this.network = network;
@@ -80,7 +82,7 @@ public class TrainingControlPanel extends JPanel{
 		//
 		
 		// Learning Rate
-		JLabel learningRateLabel = new JLabel( Common.getTranslated("control.label.learningrate") + ":");
+		JLabel learningRateLabel = new JLabel( Common.getTranslated("training.label.learningrate") + ":");
 		JTextField learningRateField = new JTextField();
 		learningRateField.setEditable( true );
 		learningRateField.setColumns(LEARNINGRATE_FIELD_COLUMNS);
@@ -88,7 +90,7 @@ public class TrainingControlPanel extends JPanel{
 		learningRateField.setInputVerifier( new DoubleVerifier( dataModel.learningRate, 0.0, 1.0 ) );
 		
 		// Momentum
-		JLabel momentumLabel = new JLabel( Common.getTranslated("control.label.momentum") + ":");
+		JLabel momentumLabel = new JLabel( Common.getTranslated("training.label.momentum") + ":");
 		JTextField momentumField = new JTextField();
 		momentumField.setEditable( true );
 		momentumField.setColumns(MOMENTUM_FIELD_COLUMNS);
@@ -96,7 +98,7 @@ public class TrainingControlPanel extends JPanel{
 		momentumField.setInputVerifier( new DoubleVerifier( dataModel.momentum, 0.0, 1.0 ) );
 		
 		// Max Loop
-		JLabel maxLoopLabel = new JLabel( Common.getTranslated("control.label.maxtrainingloop") + ":");
+		JLabel maxLoopLabel = new JLabel( Common.getTranslated("training.label.maxtrainingloop") + ":");
 		JTextField maxLoopField = new JTextField();
 		maxLoopField.setEditable( true );
 		maxLoopField.setColumns(LOOP_FIELD_COLUMNS);
@@ -104,7 +106,7 @@ public class TrainingControlPanel extends JPanel{
 		maxLoopField.setInputVerifier( new IntegerVerifier( dataModel.maxTrainingLoop, 1 ) );
 		
 		// Mean Squared Error (MSE)
-		JLabel maxMSELabel = new JLabel( Common.getTranslated("control.label.maxmse") + ":");
+		JLabel maxMSELabel = new JLabel( Common.getTranslated("training.label.maxmse") + ":");
 		JTextField maxMSEField = new JTextField();
 		maxMSEField.setEditable( true );
 		maxMSEField.setColumns(MSE_FIELD_COLUMNS);		
@@ -112,7 +114,7 @@ public class TrainingControlPanel extends JPanel{
 		maxMSEField.setInputVerifier( new DoubleStringVerifier( dataModel.maxMeanSquaredError, 0.0, 0.01 ) );
 
 		// Loop After handle Error
-		JLabel loopsAfterHandleErrorLabel = new JLabel( Common.getTranslated("control.label.loopsafterhandleerror") + ":");
+		JLabel loopsAfterHandleErrorLabel = new JLabel( Common.getTranslated("training.label.loopsafterhandleerror") + ":");
 		loopsAfterHandleErrorField = new JTextField();
 		loopsAfterHandleErrorField.setEditable( true );
 		loopsAfterHandleErrorField.setColumns(LOOPSAFTERHANDLEERROR_FIELD_COLUMNS);
@@ -120,30 +122,30 @@ public class TrainingControlPanel extends JPanel{
 		loopsAfterHandleErrorField.setInputVerifier( new IntegerVerifier( dataModel.loopsAfterHandleError, 100, dataModel.maxTrainingLoop.getValue() ) );
 
 		// actual Loop
-		JLabel actualLoopLabel = new JLabel( Common.getTranslated("control.label.actualtrainingloop") + ":");
+		JLabel actualLoopLabel = new JLabel( Common.getTranslated("training.label.actualtrainingloop") + ":");
 		actualLoopField = new JTextField();
 		actualLoopField.setEditable( false );
 		actualLoopField.setEnabled( false );
 		actualLoopField.setColumns(LOOP_FIELD_COLUMNS);
 
 		// Mean Squared Error (MSE)
-		JLabel actualMSELabel = new JLabel( Common.getTranslated("control.label.actualmse") + ":");
+		JLabel actualMSELabel = new JLabel( Common.getTranslated("training.label.actualmse") + ":");
 		actualMSEField = new JTextField();
 		actualMSEField.setEditable( false );
 		actualMSEField.setEnabled( false );
 		actualMSEField.setColumns(MSE_FIELD_COLUMNS);
 
 		// Start button
-		JButton startButton = new JButton( Common.getTranslated("control.button.start") );
+		JButton startButton = new JButton( Common.getTranslated("training.button.start") );
 		startButton.setBackground( Color.green );
 		
 		// Stop button
-		JButton stopButton = new JButton( Common.getTranslated("control.button.stop") );
+		JButton stopButton = new JButton( Common.getTranslated("training.button.stop") );
 		stopButton.setBackground( Color.red );
 		stopButton.setEnabled( false );
 
 		// Reset button
-		JButton resetWeightsButton = new JButton( Common.getTranslated("control.button.resetweights") );
+		JButton resetWeightsButton = new JButton( Common.getTranslated("training.button.resetweights") );
 		resetWeightsButton.setBackground( Color.yellow );
 		resetWeightsButton.setEnabled( true );
 		
@@ -172,6 +174,7 @@ public class TrainingControlPanel extends JPanel{
 		controlConstraints.gridy = row;
 		controlConstraints.anchor = GridBagConstraints.CENTER;
 		controlConstraints.weighty = 0;
+		controlConstraints.weightx = 0;
 		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
 		this.add( learningRateField, controlConstraints );
 
@@ -394,21 +397,19 @@ class ErrorGraphPainterListener implements PainterListener{
 }
 
 class ErrorGraph{
+	private double DEL = 50;
+	
 	private static MCanvas myCanvas = null;
 	int smallestVisibleLoop;
-	double smallestVisibleError;
-	
+	double smallestVisibleError;	
 	
 	private ErrorGraph(int handleErrorCounter, double maxMeanSquaredError){
 		this.smallestVisibleLoop = handleErrorCounter;
-		
-		String stringFormat = String.valueOf( maxMeanSquaredError );
-		
-		this. smallestVisibleError = maxMeanSquaredError / 100; 
+		this. smallestVisibleError = maxMeanSquaredError / DEL;
+		//String stringFormat = String.valueOf( maxMeanSquaredError );		 
 	}
 		
-	private void generateCanvas(){
-		
+	private void generateCanvas(){		
 		
 		Border border = BorderFactory.createLoweredBevelBorder();
 		Color color = Color.black;
@@ -424,7 +425,8 @@ class ErrorGraph{
 		//Grid
 		Color gridColor = new Color(0, 55, 0);
 		int gridWidth = 1;
-		DeltaValue gridDelta = new DeltaValue( 1000000.0, 0.00001 );
+		//DeltaValue gridDelta = new DeltaValue( 1000000.0, 0.00001 );
+		DeltaValue gridDelta = new DeltaValue( smallestVisibleLoop * DEL, smallestVisibleError * DEL );
 		Grid.PainterPosition gridPosition = Grid.PainterPosition.DEEPEST;
 		Grid.Type gridType = Grid.Type.SOLID;
 		Grid myGrid;
@@ -434,7 +436,7 @@ class ErrorGraph{
 		//Axis		
 		Color axiscolor = new Color(0, 100, 0);
 		int axisWidthInPixel = 1;
-		AxisPosition axisPosition = Axis.AxisPosition.AT_LEFT_BOTTOM;
+		AxisPosition axisPosition = Axis.AxisPosition.AT_LEFT;
 		Axis.PainterPosition painterPosition = Axis.PainterPosition.HIGHEST;
 		Axis axis = new Axis(myCanvas, axisPosition, axiscolor, axisWidthInPixel, painterPosition);
 		axis.turnOn();

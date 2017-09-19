@@ -1,4 +1,4 @@
-package hu.akoel.neurnetgui;
+package hu.akoel.neurnetgui.accessories;
 
 import java.io.FileInputStream;
 import java.io.IOException;

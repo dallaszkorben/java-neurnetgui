@@ -2,6 +2,8 @@ package hu.akoel.neurnetgui;
 
 import javax.swing.SwingUtilities;
 
+import hu.akoel.neurnetgui.accessories.Common;
+
 public class NeurmetGUI {
 
 	public static void main( String[] args ){
