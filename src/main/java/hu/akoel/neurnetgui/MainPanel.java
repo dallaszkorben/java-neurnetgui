@@ -4,7 +4,6 @@ package hu.akoel.neurnetgui;
 
 import java.awt.BorderLayout;
 import java.awt.event.KeyEvent;
-
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JFrame;
@@ -20,6 +19,7 @@ import hu.akoel.neurnet.layer.Layer;
 import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnet.neuron.Neuron;
 import hu.akoel.neurnetgui.accessories.Common;
+import hu.akoel.neurnetgui.networkcanvas.NetworkCanvas;
 import hu.akoel.neurnetgui.tab.TabbedPanelContainer;
 
 /**
@@ -37,12 +37,15 @@ public class MainPanel extends JFrame{
 	private JPanel containerPanel;
 	
 	private String version;
-	private DataModel dataControl;
+	private DataModel dataModel;
+
+	//NetworkCanvas
+	private NetworkCanvas networkCanvas;	
 	
-	public MainPanel( DataModel dataControl, String version ){
+	public MainPanel( DataModel dataModel, String version ){
     	this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     	
-    	this.dataControl = dataControl;
+    	this.dataModel = dataModel;
     	this.version = version;
     	this.setTitle("");
     	this.setUndecorated( false );
@@ -102,15 +105,20 @@ public class MainPanel extends JFrame{
     			new double[][]{{0.1}, {0.15}, {0.2}, {0.35}, {0.4}, {0.45}, {0.5} }
     	);
     	int inputLayerSize = 1;
-    	int innerLayerSize = 5;
+    	int innerLayerSize1 = 3;
+    	int innerLayerSize2 = 3;
     	int outputLayerSize = 1;
     	Layer inputLayer = new Layer();
     	for( int i = 0; i < inputLayerSize; i++ ){
     		inputLayer.addNeuron(new Neuron());
     	}
-    	Layer innerLayer = new Layer();
-    	for( int i = 0; i < innerLayerSize; i++ ){
-    		innerLayer.addNeuron(new Neuron());
+    	Layer innerLayer1 = new Layer();
+    	for( int i = 0; i < innerLayerSize1; i++ ){
+    		innerLayer1.addNeuron(new Neuron());
+    	}
+    	Layer innerLayer2 = new Layer();
+    	for( int i = 0; i < innerLayerSize2; i++ ){
+    		innerLayer2.addNeuron(new Neuron());
     	}
     	Layer outputLayer = new Layer();
     	for( int i = 0; i < outputLayerSize; i++ ){
@@ -118,46 +126,37 @@ public class MainPanel extends JFrame{
     	}
     	Network myNetwork = new Network();
     	myNetwork.addLayer( inputLayer );
-    	myNetwork.addLayer( innerLayer );
+    	myNetwork.addLayer( innerLayer1 );
+    	myNetwork.addLayer( innerLayer2 );
     	myNetwork.addLayer( outputLayer );
     	  	
 
     	
+
     	
     	
     	
+
     	
+    	// NetworkCanvas
+    	networkCanvas = new NetworkCanvas();
+    	TabbedPanelContainer settingTabbedPanel = new TabbedPanelContainer( networkCanvas, myNetwork, myDataHandler, dataModel );
     	
-    	
-    	
-    	
-    	
-    	JPanel modelCanvas = new JPanel();
-    	TabbedPanelContainer settingTabbedPanel = new TabbedPanelContainer( myNetwork, myDataHandler, dataControl );
-    	
-    	
-    	
-    	//TrainingControlPanel controlPanel = new TrainingControlPanel( myNetwork, myDataHandler, dataControl );
-    	
+    	// Preparation for the SplitPane
     	this.containerPanel = new JPanel();
     	this.containerPanel.setLayout( new BoxLayout( containerPanel, BoxLayout.Y_AXIS ) );
     	this.containerPanel.add( settingTabbedPanel );
 //    	this.containerPanel.add(Box.createVerticalGlue());
 //    	this.containerPanel.add( controlPanel );
     	
-    	
-    	
-    	JSplitPane splitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, modelCanvas, containerPanel );
+    	JSplitPane splitPane = new JSplitPane( JSplitPane.HORIZONTAL_SPLIT, networkCanvas, containerPanel );
     	splitPane.setOneTouchExpandable( true );
     	splitPane.setDividerLocation( DEFAULT_WIDTH - DEFAULTSETTINFTABBEDPANEL );
     	splitPane.setResizeWeight( 1.0 );
     	
-    	
-    	//TrainingControlPanel controlPanel = new TrainingControlPanel( myNetwork, myDataHandler, dataControl );
+    	// Placing SplitPane
     	this.getContentPane().setLayout( new BorderLayout(10, 10));
     	this.getContentPane().add(splitPane, BorderLayout.CENTER);
-    	
-    	
     	
     	this.setVisible( true );
     }

@@ -39,10 +39,10 @@ import hu.akoel.neurnet.listeners.ILoopListener;
 import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnet.resultiterator.IResultIterator;
 import hu.akoel.neurnetgui.DataModel;
-import hu.akoel.neurnetgui.MutableDouble;
-import hu.akoel.neurnetgui.MutableInteger;
-import hu.akoel.neurnetgui.MutableString;
 import hu.akoel.neurnetgui.accessories.Common;
+import hu.akoel.neurnetgui.accessories.MutableDouble;
+import hu.akoel.neurnetgui.accessories.MutableInteger;
+import hu.akoel.neurnetgui.accessories.MutableString;
 
 public class TrainingTab extends JPanel{
 	private static final long serialVersionUID = 8909396748536386035L;
@@ -580,29 +580,16 @@ class TrainingLoopListener implements ILoopListener{
 	public void handlerError(int loopCounter, double totalMeanSquareError, ArrayList<IResultIterator> resultIteratorArray) {
 		if( loopCounter % dataModel.loopsAfterHandleError.getValue() == 0 ){
 			this.actualLoop.setText( String.valueOf( offset + loopCounter ) );
-			//String stringFormat = String.valueOf( offset + dataModel.maxMeanSquaredError.getValue() );
-				
+			//String stringFormat = String.valueOf( offset + dataModel.maxMeanSquaredError.getValue() );				
 			//stringFormat = "#0.00" + new String(new char[stringFormat.length()]).replace('\0', '0');
 
 			String stringFormat =Common.getDecimalFormat(dataModel.maxMeanSquaredError.getValue(), 2); 
 			this.actualMSE.setText( String.valueOf( Common.getFormattedDecimal( totalMeanSquareError, stringFormat ) ) );			
-			
+
+			//Add the new Error to the list
 			errorGraphDataList.add( new ErrorGraphDataPairs( offset + loopCounter, totalMeanSquareError ));
-
-/*			//Canvas transformation to be at right-middle the actual active point
-			if( !errorGraphDataList.isEmpty() ){
-				double lastDataValue = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getValue();
-
-				double lastDataPosition = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getLoop();
-				int lastPixelPosition = errorCanvas.getWidth() - 15;
-				double lastWorldPosition = errorCanvas.getWorldXLengthByPixel( lastPixelPosition );
-				double difference = lastWorldPosition - lastDataPosition;			
-
-				//errorCanvas.setWorldTranslateX( errorCanvas.getWorldXLengthByPixel( errorCanvas.getWidth() ) - lastDataPosition );
-				errorCanvas.setWorldTranslateX( difference );
-				errorCanvas.setWorldTranslateY( errorCanvas.getWorldYLengthByPixel( errorCanvas.getHeight() ) / 2 -lastDataValue );
-			}
-*/			
+			
+			//Reprint the graph
 			errorCanvas.revalidateAndRepaintCoreCanvas();
 
 		}
@@ -751,10 +738,6 @@ class DoubleStringVerifier extends InputVerifier{
 	private MutableString dataModelDoubleString;
 	private Double minimumValue;
 	private Double maximumValue;
-
-	//public DoubleStringVerifier(MutableString dataModelDouble){
-	//	this.dataModelDoubleString = dataModelDouble;
-	//}
 	
 	public DoubleStringVerifier(MutableString dataModelDouble, Double minimumValue, Double maximumValue){
 		this.dataModelDoubleString = dataModelDouble;

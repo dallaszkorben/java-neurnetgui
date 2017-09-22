@@ -6,6 +6,7 @@ import hu.akoel.neurnetgui.DataModel;
 import hu.akoel.neurnetgui.accessories.Common;
 import hu.akoel.neurnetgui.accessories.CompositeIcon;
 import hu.akoel.neurnetgui.accessories.VTextIcon;
+import hu.akoel.neurnetgui.networkcanvas.NetworkCanvas;
 
 import javax.swing.Icon;
 import javax.swing.JTabbedPane;
@@ -21,7 +22,7 @@ public class TabbedPanelContainer extends JTabbedPane{
 	CompositeIcon trainingTabIcon;
 	CompositeIcon constructionTabIcon;
 	
-	public TabbedPanelContainer( Network network, DataHandler trainingDataHandler, DataModel dataModel ){
+	public TabbedPanelContainer( NetworkCanvas networkCanvas, Network network, DataHandler trainingDataHandler, DataModel dataModel ){
 		super(RIGHT);
 		
 		trainingTab = new TrainingTab(network, trainingDataHandler, dataModel);
@@ -29,7 +30,7 @@ public class TabbedPanelContainer extends JTabbedPane{
 		Icon trainingTabGraphicIcon = UIManager.getIcon("FileView.computerIcon");
 		trainingTabIcon = new CompositeIcon( trainingTabGraphicIcon, trainingTabTextIcon );
 
-		constructionTab = new ConstructionTab();//network, trainingDataHandler, dataModel);
+		constructionTab = new ConstructionTab( networkCanvas );//network, trainingDataHandler, dataModel);
 		VTextIcon constructionTabTextIcon = new VTextIcon(constructionTab, Common.getTranslated("construction.title"), VTextIcon.ROTATE_LEFT);
 		Icon constructionTabGraphicIcon = UIManager.getIcon("FileView.computerIcon");
 		constructionTabIcon = new CompositeIcon( constructionTabGraphicIcon, constructionTabTextIcon );
@@ -38,6 +39,6 @@ public class TabbedPanelContainer extends JTabbedPane{
 		this.addTab( null, trainingTabIcon, trainingTab );
 		this.addTab( null, constructionTabIcon, constructionTab );
 
-		this.setSelectedIndex( 0 );
+		this.setSelectedIndex( 1 );
 	}
 }

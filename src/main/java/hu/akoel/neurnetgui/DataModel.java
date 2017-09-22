@@ -1,5 +1,9 @@
 package hu.akoel.neurnetgui;
 
+import hu.akoel.neurnetgui.accessories.MutableDouble;
+import hu.akoel.neurnetgui.accessories.MutableInteger;
+import hu.akoel.neurnetgui.accessories.MutableString;
+
 public class DataModel {
 	public static final int DEFAULT_MAXLOOP = 10000000;
 	public static final String DEFAULT_MAXMSE = "0.00002";

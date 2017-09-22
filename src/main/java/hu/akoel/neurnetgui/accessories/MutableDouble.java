@@ -1,4 +1,4 @@
-package hu.akoel.neurnetgui;
+package hu.akoel.neurnetgui.accessories;
 
 public class MutableDouble {
 	private double value;
