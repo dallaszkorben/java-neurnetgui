@@ -3,6 +3,8 @@ package hu.akoel.neurnetgui;
 import javax.swing.SwingUtilities;
 
 import hu.akoel.neurnetgui.accessories.Common;
+import hu.akoel.neurnetgui.datamodels.ConstructionDataModel;
+import hu.akoel.neurnetgui.datamodels.TrainingDataModel;
 
 public class NeurmetGUI {
 
@@ -12,15 +14,16 @@ public class NeurmetGUI {
 
 		Common.loadSettings();
 		
-		DataModel dataControl = new DataModel();
+		TrainingDataModel dataControl = new TrainingDataModel();
 	
 //		SwingUtilities.invokeLater( new InvokeLaterRunnable(dataControl, version) );
 		SwingUtilities.invokeLater( new Runnable(){
 
 			public void run() {
 				String version = "1.0.0";
-				DataModel dataControl = new DataModel();
-				new MainPanel(dataControl, version);
+				TrainingDataModel trainingDataModel = new TrainingDataModel();
+				ConstructionDataModel constructionDataModel = new ConstructionDataModel();
+				new MainPanel(trainingDataModel, constructionDataModel, version);
 				
 			}
 			
@@ -32,12 +35,14 @@ public class NeurmetGUI {
 
 class InvokeLaterRunnable implements Runnable {
 	private String version;
-	private DataModel dataControl;
-	public InvokeLaterRunnable(DataModel dataControl, String version){
-		this.dataControl = dataControl;
+	private TrainingDataModel trainingDataModel;
+	private ConstructionDataModel constructionDataModel;
+	public InvokeLaterRunnable(TrainingDataModel trainingDataModel, ConstructionDataModel constructionDataModel, String version){
+		this.trainingDataModel = trainingDataModel;
+		this.constructionDataModel = constructionDataModel;
 		this.version = version;
 	}
 	public void run() {
-		new MainPanel(dataControl, version);
+		new MainPanel(trainingDataModel, constructionDataModel, version);
 	}
 }

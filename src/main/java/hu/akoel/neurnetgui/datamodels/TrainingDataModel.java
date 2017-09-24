@@ -1,10 +1,10 @@
-package hu.akoel.neurnetgui;
+package hu.akoel.neurnetgui.datamodels;
 
-import hu.akoel.neurnetgui.accessories.MutableDouble;
-import hu.akoel.neurnetgui.accessories.MutableInteger;
-import hu.akoel.neurnetgui.accessories.MutableString;
+import hu.akoel.neurnetgui.verifiers.MutableDouble;
+import hu.akoel.neurnetgui.verifiers.MutableInteger;
+import hu.akoel.neurnetgui.verifiers.MutableString;
 
-public class DataModel {
+public class TrainingDataModel {
 	public static final int DEFAULT_MAXLOOP = 10000000;
 	public static final String DEFAULT_MAXMSE = "0.00002";
 	public static final double DEFAULT_ALPHA = 0.3;

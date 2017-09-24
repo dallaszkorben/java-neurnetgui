@@ -19,6 +19,8 @@ import hu.akoel.neurnet.layer.Layer;
 import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnet.neuron.Neuron;
 import hu.akoel.neurnetgui.accessories.Common;
+import hu.akoel.neurnetgui.datamodels.ConstructionDataModel;
+import hu.akoel.neurnetgui.datamodels.TrainingDataModel;
 import hu.akoel.neurnetgui.networkcanvas.NetworkCanvas;
 import hu.akoel.neurnetgui.tab.TabbedPanelContainer;
 
@@ -37,16 +39,19 @@ public class MainPanel extends JFrame{
 	private JPanel containerPanel;
 	
 	private String version;
-	private DataModel dataModel;
+	private TrainingDataModel trainingDataModel;
+	private ConstructionDataModel constructionDataModel;
 
 	//NetworkCanvas
 	private NetworkCanvas networkCanvas;	
 	
-	public MainPanel( DataModel dataModel, String version ){
+	public MainPanel( TrainingDataModel trainingDataModel, ConstructionDataModel constructionDataModel, String version ){
     	this.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     	
-    	this.dataModel = dataModel;
+    	this.trainingDataModel = trainingDataModel;
+    	this.constructionDataModel = constructionDataModel;    	
     	this.version = version;
+    	
     	this.setTitle("");
     	this.setUndecorated( false );
     	this.setSize( DEFAULT_WIDTH, DEFAULT_HEIGHT );
@@ -140,7 +145,8 @@ public class MainPanel extends JFrame{
     	
     	// NetworkCanvas
     	networkCanvas = new NetworkCanvas();
-    	TabbedPanelContainer settingTabbedPanel = new TabbedPanelContainer( networkCanvas, myNetwork, myDataHandler, dataModel );
+    	//TODO myNetwork and myDataHandler will be removed as parameters
+    	TabbedPanelContainer settingTabbedPanel = new TabbedPanelContainer( networkCanvas, myNetwork, myDataHandler, trainingDataModel, constructionDataModel );
     	
     	// Preparation for the SplitPane
     	this.containerPanel = new JPanel();

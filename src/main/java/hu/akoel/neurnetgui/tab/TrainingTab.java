@@ -2,19 +2,15 @@ package hu.akoel.neurnetgui.tab;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import javax.swing.BorderFactory;
-import javax.swing.InputVerifier;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -30,7 +26,6 @@ import hu.akoel.mgu.grid.Grid;
 import hu.akoel.mgu.values.DeltaValue;
 import hu.akoel.mgu.values.PixelPerUnitValue;
 import hu.akoel.mgu.values.PositionValue;
-import hu.akoel.mgu.values.SizeValue;
 import hu.akoel.mgu.values.TranslateValue;
 import hu.akoel.mgu.values.ZoomRateValue;
 import hu.akoel.neurnet.handlers.DataHandler;
@@ -38,16 +33,16 @@ import hu.akoel.neurnet.listeners.IActivityListener;
 import hu.akoel.neurnet.listeners.ILoopListener;
 import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnet.resultiterator.IResultIterator;
-import hu.akoel.neurnetgui.DataModel;
 import hu.akoel.neurnetgui.accessories.Common;
-import hu.akoel.neurnetgui.accessories.MutableDouble;
-import hu.akoel.neurnetgui.accessories.MutableInteger;
-import hu.akoel.neurnetgui.accessories.MutableString;
+import hu.akoel.neurnetgui.datamodels.TrainingDataModel;
+import hu.akoel.neurnetgui.verifiers.IntegerVerifier;
+import hu.akoel.neurnetgui.verifiers.DoubleVerifier;
+import hu.akoel.neurnetgui.verifiers.DoubleStringVerifier;
 
 public class TrainingTab extends JPanel{
 	private static final long serialVersionUID = 8909396748536386035L;
 	
-	private DataModel dataModel;
+	private TrainingDataModel dataModel;
 	private Network network;
 	private DataHandler trainingDataHandler;
 	
@@ -66,7 +61,7 @@ public class TrainingTab extends JPanel{
 	public JTextField loopsAfterHandleErrorField;
 	public MCanvas errorCanvas;
 
-	public TrainingTab(Network network, DataHandler trainingDataHandler, DataModel dataModel){
+	public TrainingTab(Network network, DataHandler trainingDataHandler, TrainingDataModel dataModel){
 		super();
 		
 		this.network = network;
@@ -473,13 +468,13 @@ class ErrorGraph{
 class StartButtonListener implements ActionListener {
 	private Network network;
 	private DataHandler trainingDataHandler;
-	private DataModel dataModel;
+	private TrainingDataModel dataModel;
 	private JButton startButton;
 	private JButton stopButton;
 	private JButton resetWeightsButon;
 	private ArrayList<ErrorGraphDataPairs> errorGraphDataList;
 	
-	public StartButtonListener(Network network, DataHandler trainingDataHandler, DataModel dataModel, ArrayList<ErrorGraphDataPairs> errorGraphDataList, JButton startButton, JButton stopButton, JButton resetWeightsButon ){
+	public StartButtonListener(Network network, DataHandler trainingDataHandler, TrainingDataModel dataModel, ArrayList<ErrorGraphDataPairs> errorGraphDataList, JButton startButton, JButton stopButton, JButton resetWeightsButon ){
 		this.network = network;
 		this.trainingDataHandler = trainingDataHandler;
 		this.dataModel = dataModel;
@@ -558,14 +553,14 @@ class StartTrainingRunnable extends Thread {
  *
  */
 class TrainingLoopListener implements ILoopListener{
-	private DataModel dataModel;
+	private TrainingDataModel dataModel;
 	private JTextField actualLoop;
 	private JTextField actualMSE;
 	private ArrayList<ErrorGraphDataPairs> errorGraphDataList;
 	private MCanvas errorCanvas;
 	private int offset = 0;
 	
-	public TrainingLoopListener( DataModel dataModel, JTextField actualLoop, JTextField actualMSE, MCanvas errorCanvas, ArrayList<ErrorGraphDataPairs> errorGraphDataList ){
+	public TrainingLoopListener( TrainingDataModel dataModel, JTextField actualLoop, JTextField actualMSE, MCanvas errorCanvas, ArrayList<ErrorGraphDataPairs> errorGraphDataList ){
 		this.dataModel = dataModel;
 		this.actualLoop = actualLoop;
 		this.actualMSE = actualMSE;
@@ -644,127 +639,7 @@ class TrainingActivitiListener implements IActivityListener{
 
 
 
-class DoubleVerifier extends InputVerifier{
-	private MutableDouble dataModelDouble;
-	private Double minimumValue;
-	private Double maximumValue;
-
-	public DoubleVerifier(MutableDouble dataModelDouble){
-		this.dataModelDouble = dataModelDouble;
-	}
-
-	public DoubleVerifier(MutableDouble dataModelDouble, Double minimumValue ){
-		this.dataModelDouble = dataModelDouble;
-		this.minimumValue = minimumValue;
-	}
-	
-	public DoubleVerifier(MutableDouble dataModelDouble, Double minimumValue, Double maximumValue){
-		this.dataModelDouble = dataModelDouble;
-		this.minimumValue = minimumValue;
-		this.maximumValue = maximumValue;
-	}
-	
-	@Override
-	public boolean verify(JComponent inputComponent) {
-		String originalString = String.valueOf( dataModelDouble.getValue() );
-		JTextField inputField = (JTextField)inputComponent;
-		String possibleString = inputField.getText();
-		Double possibleDouble;
-		try{
-			possibleDouble = Double.valueOf( possibleString );
-			if( null != minimumValue && possibleDouble < minimumValue ){
-				inputField.setText( originalString );
-				return false;
-			}else if( null != maximumValue && possibleDouble > maximumValue ){
-				inputField.setText( originalString );
-				return false;
-			}			
-		}catch( NumberFormatException e ){
-			inputField.setText( originalString );
-			return false;
-		}
-		dataModelDouble.setValue( possibleDouble );
-		return true;	
-	}	
-}
 
 
-class IntegerVerifier extends InputVerifier{
-	private MutableInteger dataModelInteger;
-	private Integer minimumValue;
-	private Integer maximumValue;
 
-	public IntegerVerifier(MutableInteger dataModelInteger){
-		this.dataModelInteger = dataModelInteger;
-	}
 
-	public IntegerVerifier( MutableInteger dataModelInteger, Integer minimumValue ){
-		this.dataModelInteger = dataModelInteger;
-		this.minimumValue = minimumValue;
-	}
-
-	public IntegerVerifier( MutableInteger dataModelInteger, Integer minimumValue, Integer maximumValue ){
-		this.dataModelInteger = dataModelInteger;
-		this.minimumValue = minimumValue;
-		this.maximumValue = maximumValue;
-	}
-	
-	@Override
-	public boolean verify(JComponent inputComponent) {		
-		String originalString = String.valueOf( dataModelInteger.getValue() );
-		JTextField inputField = (JTextField)inputComponent;
-		String possibleString = inputField.getText();
-		Integer possibleInt;
-		try{
-			possibleInt = Integer.valueOf( possibleString );
-			if( null != minimumValue && possibleInt < minimumValue ){
-				inputField.setText( originalString );
-				return false;
-			}else if( null != maximumValue && possibleInt > maximumValue ){
-				inputField.setText( originalString );
-				return false;
-			}			
-		}catch( NumberFormatException e ){
-			inputField.setText( originalString );
-			return false;
-		}
-		dataModelInteger.setValue( possibleInt );
-		return true;
-	}
-	
-}
-
-class DoubleStringVerifier extends InputVerifier{
-	private MutableString dataModelDoubleString;
-	private Double minimumValue;
-	private Double maximumValue;
-	
-	public DoubleStringVerifier(MutableString dataModelDouble, Double minimumValue, Double maximumValue){
-		this.dataModelDoubleString = dataModelDouble;
-		this.minimumValue = minimumValue;
-		this.maximumValue = maximumValue;
-	}
-	
-	@Override
-	public boolean verify(JComponent inputComponent) {
-		String originalString = String.valueOf( dataModelDoubleString.getValue() );
-		JTextField inputField = (JTextField)inputComponent;
-		String possibleString = inputField.getText();
-		Double possibleDouble;
-		try{
-			possibleDouble = Double.valueOf( possibleString );
-			if( null != minimumValue && possibleDouble < minimumValue ){
-				inputField.setText( originalString );
-				return false;
-			}else if( null != maximumValue && possibleDouble > maximumValue ){
-				inputField.setText( originalString );
-				return false;
-			}			
-		}catch( NumberFormatException e ){
-			inputField.setText( originalString );
-			return false;
-		}
-		dataModelDoubleString.setValue( possibleString );
-		return true;	
-	}	
-}
