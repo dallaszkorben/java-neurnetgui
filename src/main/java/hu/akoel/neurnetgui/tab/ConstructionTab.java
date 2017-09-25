@@ -7,6 +7,9 @@ import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -46,6 +49,9 @@ class NeuronContainer{
 	public static final double SPACE_FOR_ONE_NEURON = 1.0;
 	public static final double NEURON_DIAMETER = 0.8;
 	
+	private static final Color NEURON_MAGNET_COLOR = Color.yellow;
+	private static final double NEUROM_MAGNET_RADIUS = 0.04;
+	
 	public static final MagnetType LAYER_TO_NEURON_MAGNET = new MagnetType("LayerToNeuronMagnetType");
 	public static final MagnetType NEURON_TO_LAYER_MAGNET = new MagnetType("NeuronToLayerMagnetType");
 	
@@ -72,7 +78,7 @@ class NeuronContainer{
 		neuronSprite.addElement( neuronBorderElement );
 		
 		//Define Neurons Magnet
-		FillOvalElement neuronToLayerMagnetElement = new FillOvalElement( 0.0, 0.0, 0.04, new Appearance( Color.yellow, new BasicStroke(1) ) );
+		FillOvalElement neuronToLayerMagnetElement = new FillOvalElement( 0.0, 0.0, NEUROM_MAGNET_RADIUS, new Appearance( NEURON_MAGNET_COLOR, new BasicStroke(1) ) );
 		
 		Magnet toLayerWestMagnet = new Magnet( neuronSprite, NEURON_TO_LAYER_MAGNET, 270.0, new RangeValueInPixel( 20, 20 ), new PositionValue( toLayerMagnetX, toLayerMagnetY ) );
 		toLayerWestMagnet.addPossibleMagnetTypeToConnect( LAYER_TO_NEURON_MAGNET  );
@@ -108,6 +114,13 @@ class LayerContainer{
 	public static final MagnetType LAYER_TO_RULER_MAGNET = new MagnetType("LayerToRulerMagnetType");
 	public static final MagnetType RULER_TO_LAYER_MAGNET = new MagnetType("RulerToLayerMagnetType");
 	
+	private static final Color LAYER_TO_RULE_MAGNET_COLOR = Color.magenta;
+	private static final double LAYER_TO_RULE_MAGNET_RADIUS = 0.07;
+	private static final Color LAYER_TO_MEURON_MAGNET_COLOR = Color.cyan;
+	private static final double LAYER_TO_NEURON_MAGNET_RADIUS = 0.04;
+
+	
+	
 	private NetworkCanvas networkCanvas;
 	private Sprite layerSprite;
 	private ArrayList<NeuronContainer> neuronList = new ArrayList<NeuronContainer>();
@@ -135,9 +148,7 @@ class LayerContainer{
 		layerBorderElement.setFocusAppearance( new Appearance( Color.blue, new BasicStroke(3f) ) );
 		
 		//Magnet to Ruller - It's position will not change
-		FillOvalElement layerToRullerMagnetElement = new FillOvalElement( 0.0, 0.0, 0.05, new Appearance( Color.red, new BasicStroke(1) ) );
-
-		//New Magnet to Ruller
+		FillOvalElement layerToRullerMagnetElement = new FillOvalElement( 0.0, 0.0, LAYER_TO_RULE_MAGNET_RADIUS, new Appearance( LAYER_TO_RULE_MAGNET_COLOR, new BasicStroke(1) ) );
 		Magnet toRullerSouthMagnet = new Magnet( layerSprite, LAYER_TO_RULER_MAGNET, 180.0, new RangeValueInPixel( 20, 20 ), new PositionValue( 0, 0 ) );
 		toRullerSouthMagnet.addPossibleMagnetTypeToConnect( RULER_TO_LAYER_MAGNET );
 		toRullerSouthMagnet.addElement( layerToRullerMagnetElement );
@@ -148,12 +159,6 @@ class LayerContainer{
 		
 		//Add the Layer to the Canvas
 		networkCanvas.addSprite(layerSprite);
-		
-//		
-	
-//addNeuronContainer( new NeuronContainer( new NeuronDescriptor( NeuronType.NORMAL, TransferFunction.SIGMOID )));		
-		
-//		
 		
 	}
 	
@@ -180,9 +185,9 @@ class LayerContainer{
 		int i = neuronList.size() - 1;
 
 		double toNeuronMagnetY = baseToNeuronMagnetY + i * NeuronContainer.SPACE_FOR_ONE_NEURON;
-		FillOvalElement layerToNeuronMagnetElement = new FillOvalElement( 0.0, 0.0, 0.04, new Appearance( Color.red, new BasicStroke(1) ) );
-			
+		
 		//New Magnet to Neuron
+		FillOvalElement layerToNeuronMagnetElement = new FillOvalElement( 0.0, 0.0, LAYER_TO_NEURON_MAGNET_RADIUS, new Appearance( LAYER_TO_MEURON_MAGNET_COLOR, new BasicStroke(1) ) );
 		Magnet toNeuronEastMagnet = new Magnet( layerSprite, NeuronContainer.LAYER_TO_NEURON_MAGNET, 90.0, new RangeValueInPixel( 20, 20 ), new PositionValue( toNeuronMagnetX, toNeuronMagnetY ) );
 		toNeuronEastMagnet.addPossibleMagnetTypeToConnect( NeuronContainer.NEURON_TO_LAYER_MAGNET );
 		toNeuronEastMagnet.addElement( layerToNeuronMagnetElement );
@@ -227,15 +232,20 @@ class LayerContainer{
 		
 		//Change the Layer position
 		layerSprite.setPosition( new PositionValue(x, y));
-
+		
 		//Chang it's Neuron's positions
 		for( NeuronContainer neuronContainer: neuronList){
 			ArrayList<Magnet> magnetList = neuronContainer.getNeuron().getMagnetList();
+			//I expecting ONLY 1 Magnet for every Neuron
 			for( Magnet magnet: magnetList ){
-				PositionValue magnetRelPos = magnet.getRelativePositionToSpriteZeroPoint();
-				neuronContainer.setPosition( x + magnetRelPos.getX(), y + magnetRelPos.getY() );
+				Magnet layerMagnet = magnet.getConnectedTo();
+				PositionValue magnetRelPos = layerMagnet.getRelativePositionToSpriteZeroPoint();
+				neuronContainer.setPosition( x + magnetRelPos.getX(), y + magnetRelPos.getY() );				
 			}
 		}
+	
+		//Make the connection between Layer and Neurons
+		networkCanvas.doArangeSpritePositionByMagnet( layerSprite );
 	}
 	
 	public Iterator<NeuronContainer> getIterator(){
@@ -260,11 +270,14 @@ class LayerContainerList{
 	public static final int LEVEL_RULER = 0;
 	
 	private static final double DISTANCE_OF_LAYERS = 5.0;
-	//private static final double RULER_HEIGHT = 0.1;
+	private static final double RULER_HEIGHT = 0.2;	//TODO modify it to ZERO
+	
+	private static final Color RULER_MAGNET_COLOR = Color.green;
+	private static final double RULER_MAGNET_RADIUS = 0.04;
 	
 	private NetworkCanvas networkCanvas;
 	private ArrayList<LayerContainer> layerContainerList = new ArrayList<LayerContainer>();
-	private Sprite rullerSprite;
+	private Sprite rulerSprite;
 	private FillRectangleElement layerBaseElement;
 	//private RectangleElement layerBorderElement;
 	
@@ -276,26 +289,26 @@ class LayerContainerList{
 		this.networkCanvas = networkCanvas;
 		
 		//Ruler has no height so it is invisible !
-		double layerHeight = 0;//RULLER_HEIGHT;  
+		double layerHeight = RULER_HEIGHT;  
 		double layerWidth = 0; //getXPosition( 0 ); 
 		double layerMinY = -( layerHeight / 2 );
 		double layerMinX = 0;
 		
-		rullerSprite = new Sprite( LEVEL_RULER, new SizeValue( layerMinX, layerMinY, layerMinX + layerWidth, layerMinY + layerHeight ) );
+		rulerSprite = new Sprite( LEVEL_RULER, new SizeValue( layerMinX, layerMinY, layerMinX + layerWidth, layerMinY + layerHeight ) );
 		
 		layerBaseElement = new FillRectangleElement( layerMinX, layerMinY, layerWidth, layerHeight, new Appearance( new Color( 40, 140, 180), new BasicStroke(1f) ) );
 		layerBaseElement.setSelectedAppearance( new Appearance( new Color( 0, 0, 255 ), new BasicStroke(1f) ));
 //		layerBorderElement = new RectangleElement(	layerMinX, layerMinY, layerWidth, layerHeight, new Appearance( new Color( 0, 30, 180), new BasicStroke(1f) ) );
 //		layerBorderElement.setFocusAppearance( new Appearance( Color.blue, new BasicStroke(3f) ) );
 		
-		rullerSprite.addElement( layerBaseElement );
+		rulerSprite.addElement( layerBaseElement );
 //		rullerSprite.addElement( layerBorderElement );
 		
 		//Default position of the Ruler
-		rullerSprite.setPosition( 0, 0 );
+		rulerSprite.setPosition( 0, 0 );
 		
 		//Add the Layer to the Canvas
-		networkCanvas.addSprite( rullerSprite );		
+		networkCanvas.addSprite( rulerSprite );		
 	}
 	
 	public void addLayerContainer( LayerContainer layerContainer ){
@@ -303,15 +316,15 @@ class LayerContainerList{
 		networkCanvas.addSprite( layerContainer.getLayer() );
 
 		//Ruler has no height so it is invisible !!
-		double layerHeight = 0;//RULLER_HEIGHT;
+		double layerHeight = RULER_HEIGHT;
 		double layerWidth = getXPosition( layerContainerList.size() - 1 );
 		double layerMinY = -( layerHeight / 2 );
 		double layerMinX = 0;
 		
-		rullerSprite.setBoundBoxXMin( layerMinX );
-		rullerSprite.setBoundBoxXMax( layerMinX + layerWidth );
-		rullerSprite.setBoundYMin( layerMinY );
-		rullerSprite.setBoundYMax( layerMinY + layerHeight );
+		rulerSprite.setBoundBoxXMin( layerMinX );
+		rulerSprite.setBoundBoxXMax( layerMinX + layerWidth );
+		rulerSprite.setBoundYMin( layerMinY );
+		rulerSprite.setBoundYMax( layerMinY + layerHeight );
 
 		layerBaseElement.setSize( layerMinX, layerMinY, layerWidth, layerHeight );
 //		layerBorderElement.setSize( layerMinX, layerMinY, layerWidth, layerHeight );
@@ -320,44 +333,75 @@ class LayerContainerList{
 		int i = layerContainerList.indexOf( layerContainer ); //layerContainerList.size() - 1;
 		double toLayerMagnetY = 0;
 		double toLayerMagnetX = getXPosition( i );
-		FillOvalElement rullerToLayerMagnetElement = new FillOvalElement( 0.0, 0.0, 0.04, new Appearance( Color.red, new BasicStroke(1) ) );
+		FillOvalElement rullerToLayerMagnetElement = new FillOvalElement( 0.0, 0.0, RULER_MAGNET_RADIUS, new Appearance( RULER_MAGNET_COLOR, new BasicStroke(1) ) );
 			
 		//Magnet to Layer
-		Magnet toLayerNorthMagnet = new Magnet(rullerSprite, LayerContainer.RULER_TO_LAYER_MAGNET, 0.0, new RangeValueInPixel( 20, 20 ), new PositionValue( toLayerMagnetX, toLayerMagnetY ) );
+		Magnet toLayerNorthMagnet = new Magnet(rulerSprite, LayerContainer.RULER_TO_LAYER_MAGNET, 0.0, new RangeValueInPixel( 20, 20 ), new PositionValue( toLayerMagnetX, toLayerMagnetY ) );
 		toLayerNorthMagnet.addPossibleMagnetTypeToConnect( LayerContainer.LAYER_TO_RULER_MAGNET );
 		toLayerNorthMagnet.addElement( rullerToLayerMagnetElement );
 
-		rullerSprite.addMagnet( toLayerNorthMagnet );
+		rulerSprite.addMagnet( toLayerNorthMagnet );
 		
 		//Change the position of the last placed Layer to the last position
 		layerContainer.setPosition( 
-				rullerSprite.getPosition().getX() + toLayerMagnetX, 
-				rullerSprite.getPosition().getY() + toLayerMagnetY );		
+				rulerSprite.getPosition().getX() + toLayerMagnetX, 
+				rulerSprite.getPosition().getY() + toLayerMagnetY );		
 		
-//Set position of the Layer
-//rullerSprite.setPosition( 0, 0 );
+		//Make the connection between Layer and Neurons
+		networkCanvas.doArangeSpritePositionByMagnet( rulerSprite );		
+	}
+
+	private void fixThePositions(){
 		
-		//Change position of the Layers's Magnets and Neurons
-/*		i = 0;
-		ArrayList<Magnet> magnetList = rullerSprite.getMagnetList();
-		for( Magnet magnet: magnetList ){
-			if( magnet.getType().equals( LayerContainer.RULLER_TO_LAYER_MAGNET ) ){
-				
-				toLayerMagnetX = baseToLayerMagnetX + i * DISTANCE_OF_LAYERS;
-				
-				//New positions for the Layers
-				Sprite layerSprite = layerContainerList.get( i ).getLayer();
-				layerSprite.setPosition( toLayerMagnetX, toLayerMagnetY );	
-				
-				//New position for the Magnet
-				magnet.setRelativePositionToSpriteZeroPoint( new PositionValue( toLayerMagnetX, toLayerMagnetY ) );
-				
-				i++;
+		//Delete Magnet connections between Ruler and Layers
+		Collection<Magnet> magnetsToRemove = new HashSet<Magnet>();
+		Iterator<Magnet> magnetIterator = rulerSprite.getMagnetList().iterator();
+		while( magnetIterator.hasNext() ){
+			Magnet magnet = magnetIterator.next();
+			if( magnet.getType().equals( LayerContainer.RULER_TO_LAYER_MAGNET ) ){
+				magnet.setConnectedTo( null );
+				magnetsToRemove.add( magnet );
 			}
 		}
-*/		
+		
+		//Delete Ruler's Magnets to Layer
+		ArrayList<Magnet> magnetListOfRuler = rulerSprite.getMagnetList();
+		magnetListOfRuler.removeAll( magnetsToRemove );
+		
+		//Resize the Ruler
+		double layerHeight = RULER_HEIGHT;
+		double layerWidth = getXPosition( layerContainerList.size() - 1 );
+		double layerMinY = -( layerHeight / 2 );
+		double layerMinX = 0;
+		
+		rulerSprite.setBoundBoxXMin( layerMinX );
+		rulerSprite.setBoundBoxXMax( layerMinX + layerWidth );
+		rulerSprite.setBoundYMin( layerMinY );
+		rulerSprite.setBoundYMax( layerMinY + layerHeight );
+
+		layerBaseElement.setSize( layerMinX, layerMinY, layerWidth, layerHeight );
+		
+		//Repositioning the layers
+		for( int i = 0; i < layerContainerList.size(); i++ ){
+			double toLayerMagnetX = getXPosition( i );
+			double toLayerMagnetY = 0;			
+
+			FillOvalElement rullerToLayerMagnetElement = new FillOvalElement( 0.0, 0.0, RULER_MAGNET_RADIUS, new Appearance( RULER_MAGNET_COLOR, new BasicStroke(1) ) );
+
+			//Magnet to Layer
+			Magnet toLayerNorthMagnet = new Magnet(rulerSprite, LayerContainer.RULER_TO_LAYER_MAGNET, 0.0, new RangeValueInPixel( 20, 20 ), new PositionValue( toLayerMagnetX, toLayerMagnetY ) );
+			toLayerNorthMagnet.addPossibleMagnetTypeToConnect( LayerContainer.LAYER_TO_RULER_MAGNET );
+			toLayerNorthMagnet.addElement( rullerToLayerMagnetElement );
+
+			rulerSprite.addMagnet( toLayerNorthMagnet );
+			
+			//Reposition the Layer
+			layerContainerList.get( i ).setPosition( rulerSprite.getPosition().getX() + toLayerMagnetX, rulerSprite.getPosition().getY() + toLayerMagnetY );
+								
+		}
 		//Make the connection between Layer and Neurons
-		networkCanvas.doArangeSpritePositionByMagnet( rullerSprite );		
+		networkCanvas.doArangeSpritePositionByMagnet( rulerSprite );
+		
 	}
 	
 	public Iterator<LayerContainer> getIterator(){
@@ -366,6 +410,26 @@ class LayerContainerList{
 	
 	public LayerContainer getLayerContainer( int index ){
 		return layerContainerList.get( index );
+	}
+	
+	public void deleteLayer( LayerContainer layerContainer ){
+
+		//Remove NeuronSprites from Canvas
+		Iterator<NeuronContainer> neuronIterator = layerContainer.getIterator();
+		while( neuronIterator.hasNext() ){
+			NeuronContainer neuronContainer = neuronIterator.next();
+			networkCanvas.removeSprite( neuronContainer.getNeuron() );
+		}
+		
+		//Remove LayerSprite from Canvas
+		networkCanvas.removeSprite( layerContainer.getLayer() );
+		
+		//Remove LayerContainer from the LayerConatinerList
+		layerContainerList.remove( layerContainer );
+		
+		//Fix the Ruler's size/magnets + repositioning Layers
+		fixThePositions();
+		
 	}
 }
 
@@ -429,9 +493,15 @@ public class ConstructionTab  extends JPanel{
 		placeNewLayerButton.setEnabled( true );
 		//placeNewLayerButton.setBackground( Color.green );
 		
+		// Delete Layer button
+		//TODO translate it
+		JButton deleteLayerButton = new JButton( "Delete Layer" );
+		deleteLayerButton.setEnabled( true );
+		//placeNewLayerButton.setBackground( Color.green );
+		
 		placeNewLayerButton.addActionListener( new PlaceNewLayerButtonListener( networkCanvas, this, dataModel ) ); 
 		insertNewNeuronButton.addActionListener( new InsertNewNeuronButtonListener( networkCanvas, this, dataModel ) );
-		
+		deleteLayerButton.addActionListener( new DeleteLayerButtonListener( networkCanvas, this, dataModel ) ); 
 		
 		//
 		// Place fields
@@ -477,6 +547,17 @@ public class ConstructionTab  extends JPanel{
 		controlConstraints.weighty = 0;
 		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
 		this.add( placeNewLayerButton, controlConstraints );
+		
+		// Delete Layer button
+		row++;
+		controlConstraints.gridx = 0;
+		controlConstraints.gridy = row;
+		controlConstraints.ipadx = 0;
+		controlConstraints.gridwidth = 2;
+		controlConstraints.anchor = GridBagConstraints.CENTER;
+		controlConstraints.weighty = 0;
+		controlConstraints.fill = GridBagConstraints.HORIZONTAL;
+		this.add( deleteLayerButton, controlConstraints );
 
 		// Filler
 		row++;
@@ -512,10 +593,10 @@ public class ConstructionTab  extends JPanel{
 		networkCanvas.revalidateAndRepaintCoreCanvas();
 	}
 	
-	public void constructLayer( NeuronDescriptor neuronDescriptor ){
+/*	private void constructLayer( NeuronDescriptor neuronDescriptor ){
 		constructLayer( neuronDescriptor, 0 );
 	}
-	
+*/	
 	public void constructLayer( NeuronDescriptor neuronDescriptor, int numberOfNeurons ){
 		
 		//Create a new Empty Layer
@@ -531,27 +612,16 @@ public class ConstructionTab  extends JPanel{
 		//Canvas refreshed
 		networkCanvas.revalidateAndRepaintCoreCanvas();
 	}
-}
-
-class PlaceNewLayerButtonListener implements ActionListener{
-	private NetworkCanvas networkCanvas;
-	private ConstructionTab constructionTab;
-	private ConstructionDataModel dataModel;
-
-	public PlaceNewLayerButtonListener( NetworkCanvas networkCanvas, ConstructionTab constructionTab, ConstructionDataModel dataModel ){
-		this.networkCanvas = networkCanvas;
-		this.constructionTab = constructionTab;
-		this.dataModel = dataModel;
-	}
 	
-	public void actionPerformed(ActionEvent e) {
+	public void deleteLayer( LayerContainer actualLayer ){
 
-		constructionTab.constructLayer( new NeuronDescriptor( NeuronType.NORMAL, TransferFunction.SIGMOID ), 5 );
+		layerContainerList.deleteLayer( actualLayer );
 		
-		//A Canvas ujrarajzolasa, az uj Sprite megjelenites miatt
-		//networkCanvas.revalidateAndRepaintCoreCanvas();		
+		networkCanvas.revalidateAndRepaintCoreCanvas();
 	}
+
 }
+
 
 class InsertNewNeuronButtonListener implements ActionListener{
 	private NetworkCanvas networkCanvas;
@@ -575,9 +645,48 @@ class InsertNewNeuronButtonListener implements ActionListener{
 		//A Canvas ujrarajzolasa, az uj Sprite megjelenites miatt
 		//networkCanvas.revalidateAndRepaintCoreCanvas();		
 	}	
-	
 }
 
+class PlaceNewLayerButtonListener implements ActionListener{
+	private NetworkCanvas networkCanvas;
+	private ConstructionTab constructionTab;
+	private ConstructionDataModel dataModel;
 
+	public PlaceNewLayerButtonListener( NetworkCanvas networkCanvas, ConstructionTab constructionTab, ConstructionDataModel dataModel ){
+		this.networkCanvas = networkCanvas;
+		this.constructionTab = constructionTab;
+		this.dataModel = dataModel;
+	}
+	
+	public void actionPerformed(ActionEvent e) {
 
+		constructionTab.constructLayer( new NeuronDescriptor( NeuronType.NORMAL, TransferFunction.SIGMOID ), 2 );
+		
+		//A Canvas ujrarajzolasa, az uj Sprite megjelenites miatt
+		//networkCanvas.revalidateAndRepaintCoreCanvas();		
+	}
+}
+
+class DeleteLayerButtonListener implements ActionListener{
+	private NetworkCanvas networkCanvas;
+	private ConstructionTab constructionTab;
+	private ConstructionDataModel dataModel;
+
+	public DeleteLayerButtonListener( NetworkCanvas networkCanvas, ConstructionTab constructionTab, ConstructionDataModel dataModel ){
+		this.networkCanvas = networkCanvas;
+		this.constructionTab = constructionTab;
+		this.dataModel = dataModel;
+	}
+	
+	public void actionPerformed(ActionEvent e) {
+		
+		LayerContainerList layerList = constructionTab.getLayerContainerList();
+		LayerContainer layer = layerList.getLayerContainer( dataModel.actualLayer.getValue() );
+
+		constructionTab.deleteLayer( layer );
+		
+		//A Canvas ujrarajzolasa, az uj Sprite megjelenites miatt
+		//networkCanvas.revalidateAndRepaintCoreCanvas();		
+	}
+}
 

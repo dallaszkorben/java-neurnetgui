@@ -36,8 +36,8 @@ public class NetworkCanvas  extends SpriteCanvas{
 	private Scale.UNIT networkCanvasUnit = Scale.UNIT.m;
 	private double networkCanvasStartScale = 100;
 	private double networkCanvasRate = 1.2;
-	private double networkCanvasMinScale = 20; // < 1:20
-	private double networkCanvasMaxScale = 220; // > 1:220
+	private double networkCanvasMinScale = 40; // < 1:20
+	private double networkCanvasMaxScale = 820; // > 1:220
 	
 	public NetworkCanvas(){
 		super( BorderFactory.createLoweredBevelBorder(), networkCanvasBackground, networkCanvasPossiblePixelPerUnits, networkCanvasPositionToMiddle );
