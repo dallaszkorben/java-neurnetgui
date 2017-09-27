@@ -2,6 +2,7 @@ package hu.akoel.neurnetgui.networkcanvas;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -10,6 +11,9 @@ import java.util.Iterator;
 import javax.swing.BorderFactory;
 import javax.swing.border.Border;
 
+import hu.akoel.mgu.MCanvas;
+import hu.akoel.mgu.MGraphics;
+import hu.akoel.mgu.PainterListener;
 import hu.akoel.mgu.PossiblePixelPerUnits;
 import hu.akoel.mgu.grid.Grid;
 import hu.akoel.mgu.scale.Scale;
@@ -78,17 +82,52 @@ public class NetworkCanvas extends SpriteCanvas {
 		 * System.err.println( "M=1:" +
 		 * df.format(networkCanvasScale.getScale().getX() ) ); } } });
 		 */
-		/*
-		 * this.addPainterListenerToDeepest( new PainterListener() { public void
-		 * paintByWorldPosition(MCanvas canvas, MGraphics g2) { double x1 = 0.0;
-		 * double y1 = 0.0; double x2 = 1.3; double y2 = 1.3; g2.setColor(
-		 * Color.red ); g2.setStroke( new BasicStroke(1)); g2.drawRectangle(x1,
-		 * y1, x2, y2); //g2.drawLine( x0, y0, x1, y0 ); //g2.drawLine( x0, y0,
-		 * x0, y1 ); }
-		 * 
-		 * public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2)
-		 * { } }, MCanvas.Level.ABOVE );
-		 */
+		
+		  this.addPainterListenerToDeepest( new PainterListener() {
+			
+			public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
+				if( layerContainerList.getSize() > 1 ){
+					
+					//Through the Layers
+					LayerContainer previousLayerContainer = null;
+					Iterator<LayerContainer> actualLayerContainerIterator = layerContainerList.getIterator();
+					while( actualLayerContainerIterator.hasNext() ){
+						LayerContainer actualLayerContainer = actualLayerContainerIterator.next();
+
+						//Through the Neurons on the Actual Layer
+						Iterator<NeuronContainer> toNeuronContainerIterator = actualLayerContainer.getIterator();
+						while( toNeuronContainerIterator.hasNext() ){
+							NeuronContainer toNeuronContainer = toNeuronContainerIterator.next();
+							Sprite toNeuronSprite = toNeuronContainer.getNeuron();
+							
+							//Get All fromNeuronSrites from the previous Layer
+							if( null != previousLayerContainer ){
+
+								//Through the Neurons on the Previous Layer
+								Iterator<NeuronContainer> fromNeuronContainerIterator = previousLayerContainer.getIterator();
+								while( fromNeuronContainerIterator.hasNext() ){
+									NeuronContainer fromNeuronContainer = fromNeuronContainerIterator.next();
+									Sprite fromNeuronSprite = fromNeuronContainer.getNeuron();
+									
+									//Here I have the from and the to Neuron
+									g2.setColor( Color.yellow );
+									g2.setStroke( new BasicStroke() );
+									g2.drawLine(  
+											fromNeuronSprite.getPosition().getX(), 
+											fromNeuronSprite.getPosition().getY(), 
+											toNeuronSprite.getPosition().getX(), 
+											toNeuronSprite.getPosition().getY());																		
+								}							
+							}
+							
+						}
+						previousLayerContainer = actualLayerContainer;
+					}
+				}				
+			}
+			
+			public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {}
+		}, MCanvas.Level.ABOVE );
 	}
 
 	public NetworkCanvas(Border borderType, Color background, PossiblePixelPerUnits possiblePixelPerUnits,
@@ -123,10 +162,10 @@ public class NetworkCanvas extends SpriteCanvas {
 		// Canvas refreshed
 		this.revalidateAndRepaintCoreCanvas();
 	}
-	
-	public void deleteLayer( int layerIndex ){
 
-		layerContainerList.deleteLayer( layerContainerList.getLayerContainer( layerIndex ) );	
+	public void deleteLayer(int layerIndex) {
+
+		layerContainerList.deleteLayer(layerContainerList.getLayerContainer(layerIndex));
 		this.revalidateAndRepaintCoreCanvas();
 	}
 
@@ -143,7 +182,7 @@ class NeuronContainer {
 	public static final int LEVEL_NEURON = 2;
 
 	public static final double SPACE_FOR_ONE_NEURON = 1.0;
-	public static final double NEURON_DIAMETER = 0.8;
+	public static final double NEURON_DIAMETER = 0.7;
 
 	private static final Color NEURON_MAGNET_COLOR = Color.yellow;
 	private static final double NEUROM_MAGNET_RADIUS = 0.04;

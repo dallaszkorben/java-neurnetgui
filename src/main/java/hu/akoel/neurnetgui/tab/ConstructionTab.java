@@ -1,33 +1,15 @@
 package hu.akoel.neurnetgui.tab;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import hu.akoel.mgu.sprite.Appearance;
-import hu.akoel.mgu.sprite.Magnet;
-import hu.akoel.mgu.sprite.MagnetType;
-import hu.akoel.mgu.sprite.Sprite;
-import hu.akoel.mgu.sprite.elements.FillOvalElement;
-import hu.akoel.mgu.sprite.elements.FillRectangleElement;
-import hu.akoel.mgu.sprite.elements.OvalElement;
-import hu.akoel.mgu.sprite.elements.RectangleElement;
-import hu.akoel.mgu.values.PositionValue;
-import hu.akoel.mgu.values.RangeValueInPixel;
-import hu.akoel.mgu.values.SizeValue;
 import hu.akoel.neurnetgui.NeuronDescriptor;
 import hu.akoel.neurnetgui.NeuronDescriptor.NeuronType;
 import hu.akoel.neurnetgui.NeuronDescriptor.TransferFunction;
@@ -46,8 +28,6 @@ public class ConstructionTab  extends JPanel{
 	private NetworkCanvas networkCanvas;
 	private ConstructionDataModel dataModel;
 	
-//	private LayerContainerList layerContainerList; 
-	
 	public ConstructionTab( NetworkCanvas networkCanvas, ConstructionDataModel dataModel ){
 		super();
 		
@@ -60,8 +40,6 @@ public class ConstructionTab  extends JPanel{
 		
 		//Place down the Ruller
 		networkCanvas.placeDownRuler();
-		//layerContainerList = new LayerContainerList( networkCanvas );
-		//networkCanvas.revalidateAndRepaintCoreCanvas();
 		
 		//
 		// Define fields
@@ -94,9 +72,9 @@ public class ConstructionTab  extends JPanel{
 		deleteLayerButton.setEnabled( true );
 		//placeNewLayerButton.setBackground( Color.green );
 		
-		placeNewLayerButton.addActionListener( new PlaceNewLayerButtonListener( networkCanvas, this, dataModel ) ); 
-		insertNewNeuronButton.addActionListener( new InsertNewNeuronButtonListener( networkCanvas, this, dataModel ) );
-		deleteLayerButton.addActionListener( new DeleteLayerButtonListener( networkCanvas, this, dataModel ) ); 
+		placeNewLayerButton.addActionListener( new PlaceNewLayerButtonListener( networkCanvas, dataModel ) ); 
+		insertNewNeuronButton.addActionListener( new InsertNewNeuronButtonListener( networkCanvas, dataModel ) );
+		deleteLayerButton.addActionListener( new DeleteLayerButtonListener( networkCanvas, dataModel ) ); 
 		
 		//
 		// Place fields
@@ -172,33 +150,16 @@ public class ConstructionTab  extends JPanel{
 		controlConstraints.fill = GridBagConstraints.BOTH;
 		this.add(new JLabel(), controlConstraints );
 	}
-/*
-	public void insertNeuron( NeuronDescriptor neuronDescriptor, int layerIndex ){
-		
-		networkCanvas.insertNeuron( neuronDescriptor, layerIndex );
-	}
 
-	public void constructLayer( NeuronDescriptor neuronDescriptor, int numberOfNeurons ){
-		
-		networkCanvas.insertLayer( neuronDescriptor, numberOfNeurons );
-	}
-	
-	public void deleteLayer( int layerIndex ){
-
-		networkCanvas.deleteLayer( layerIndex );
-	}
-*/	
 }
 
 
 class InsertNewNeuronButtonListener implements ActionListener{
 	private NetworkCanvas networkCanvas;
-	private ConstructionTab constructionTab;
 	private ConstructionDataModel dataModel;
 	
-	public InsertNewNeuronButtonListener( NetworkCanvas networkCanvas, ConstructionTab constructionTab, ConstructionDataModel dataModel ){
+	public InsertNewNeuronButtonListener( NetworkCanvas networkCanvas, ConstructionDataModel dataModel ){
 		this.networkCanvas = networkCanvas;
-		this.constructionTab = constructionTab;
 		this.dataModel = dataModel;
 	}
 	
@@ -211,12 +172,10 @@ class InsertNewNeuronButtonListener implements ActionListener{
 
 class PlaceNewLayerButtonListener implements ActionListener{
 	private NetworkCanvas networkCanvas;
-	private ConstructionTab constructionTab;
 	private ConstructionDataModel dataModel;
 
-	public PlaceNewLayerButtonListener( NetworkCanvas networkCanvas, ConstructionTab constructionTab, ConstructionDataModel dataModel ){
+	public PlaceNewLayerButtonListener( NetworkCanvas networkCanvas, ConstructionDataModel dataModel ){
 		this.networkCanvas = networkCanvas;
-		this.constructionTab = constructionTab;
 		this.dataModel = dataModel;
 	}
 	
@@ -227,12 +186,10 @@ class PlaceNewLayerButtonListener implements ActionListener{
 
 class DeleteLayerButtonListener implements ActionListener{
 	private NetworkCanvas networkCanvas;
-	private ConstructionTab constructionTab;
 	private ConstructionDataModel dataModel;
 
-	public DeleteLayerButtonListener( NetworkCanvas networkCanvas, ConstructionTab constructionTab, ConstructionDataModel dataModel ){
+	public DeleteLayerButtonListener( NetworkCanvas networkCanvas, ConstructionDataModel dataModel ){
 		this.networkCanvas = networkCanvas;
-		this.constructionTab = constructionTab;
 		this.dataModel = dataModel;
 	}
 	
