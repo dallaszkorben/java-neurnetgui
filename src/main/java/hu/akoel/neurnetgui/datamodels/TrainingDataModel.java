@@ -1,5 +1,7 @@
 package hu.akoel.neurnetgui.datamodels;
 
+import java.io.File;
+
 import hu.akoel.neurnetgui.verifiers.MutableDouble;
 import hu.akoel.neurnetgui.verifiers.MutableInteger;
 import hu.akoel.neurnetgui.verifiers.MutableString;
@@ -18,4 +20,6 @@ public class TrainingDataModel {
 	public MutableDouble momentum = new MutableDouble( DEFAULT_MOMENTUM );	
 	
 	public MutableInteger loopsAfterHandleError = new MutableInteger( DEFAULT_HANDLEERRORCOUNTER );
+	
+	public File trainingDataDirectory = null;
 }

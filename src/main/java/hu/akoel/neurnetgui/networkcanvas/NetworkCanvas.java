@@ -2,11 +2,14 @@ package hu.akoel.neurnetgui.networkcanvas;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.font.FontRenderContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.border.Border;
@@ -32,12 +35,17 @@ import hu.akoel.mgu.values.PositionValue;
 import hu.akoel.mgu.values.RangeValueInPixel;
 import hu.akoel.mgu.values.SizeValue;
 import hu.akoel.mgu.values.TranslateValue;
+import hu.akoel.neurnet.layer.Layer;
+import hu.akoel.neurnet.network.Network;
+import hu.akoel.neurnet.neuron.Neuron;
 import hu.akoel.neurnetgui.NeuronDescriptor;
 
 public class NetworkCanvas extends SpriteCanvas {
 
 	private static final long serialVersionUID = 2828047024539494605L;
 
+	private Set<NetworkModelChangeListener> networkModelChangeListenerSet = new HashSet<NetworkModelChangeListener>();
+	
 	// NetworkCanvas
 	// private static NetworkCanvas networkCanvas;
 	private static Color networkCanvasBackground = Color.black;
@@ -86,6 +94,8 @@ public class NetworkCanvas extends SpriteCanvas {
 		  this.addPainterListenerToDeepest( new PainterListener() {
 			
 			public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
+				Font font = new Font("Dialog", Font.PLAIN, 12);
+				
 				if( layerContainerList.getSize() > 1 ){
 					
 					//Through the Layers
@@ -112,11 +122,21 @@ public class NetworkCanvas extends SpriteCanvas {
 									//Here I have the from and the to Neuron
 									g2.setColor( Color.yellow );
 									g2.setStroke( new BasicStroke() );
-									g2.drawLine(  
+									g2.	drawLine(  
 											fromNeuronSprite.getPosition().getX(), 
 											fromNeuronSprite.getPosition().getY(), 
 											toNeuronSprite.getPosition().getX(), 
-											toNeuronSprite.getPosition().getY());																		
+											toNeuronSprite.getPosition().getY());	
+
+									FontRenderContext frc = g2.getFontRenderContext();
+									/*TextLayout textLayout = new TextLayout( "", font, frc);
+									g2.setColor( Color.red );
+									g2.drawFont(
+											textLayout, 
+											fromNeuronSprite.getPosition().getX() + (toNeuronSprite.getPosition().getX() - fromNeuronSprite.getPosition().getX() ) / 2,
+											fromNeuronSprite.getPosition().getY() + (toNeuronSprite.getPosition().getY() - fromNeuronSprite.getPosition().getY() ) / 2
+											);
+									*/		
 								}							
 							}
 							
@@ -128,6 +148,11 @@ public class NetworkCanvas extends SpriteCanvas {
 			
 			public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {}
 		}, MCanvas.Level.ABOVE );
+
+		// Ruler on the Canvas - It is allways there, never move
+		layerContainerList = new LayerContainerList(this);
+		this.revalidateAndRepaintCoreCanvas();
+
 	}
 
 	public NetworkCanvas(Border borderType, Color background, PossiblePixelPerUnits possiblePixelPerUnits,
@@ -136,17 +161,34 @@ public class NetworkCanvas extends SpriteCanvas {
 
 	}
 
-	public void placeDownRuler() {
+	public void addNetworkModelChangeListener( NetworkModelChangeListener networkModelChangeListener ){
+		networkModelChangeListenerSet.add( networkModelChangeListener );
+	}
+	
+/*	public void placeDownRuler() {
 		layerContainerList = new LayerContainerList(this);
 		this.revalidateAndRepaintCoreCanvas();
 	}
-
+*/
+	
 	public void insertNeuron(NeuronDescriptor neuronDescriptor, int layerIndex) {
+		insertNeuron(neuronDescriptor, layerIndex, true);
+	}
+
+	private void insertNeuron(NeuronDescriptor neuronDescriptor, int layerIndex, boolean needToInformRegistrator ) {
 		NeuronContainer neuronContainer = new NeuronContainer(neuronDescriptor);
 		layerContainerList.getLayerContainer(layerIndex).addNeuronContainer(neuronContainer);
 		this.revalidateAndRepaintCoreCanvas();
-	}
 
+		if( needToInformRegistrator ){
+
+			//Inform the registrators thath the NetworkModel has changed
+			for( NetworkModelChangeListener listener: networkModelChangeListenerSet ){
+				listener.elementChanged( this );
+			}
+		}
+	}
+	
 	public void insertLayer(NeuronDescriptor neuronDescriptor, int numberOfNeurons) {
 
 		// Create a new Empty Layer
@@ -156,19 +198,64 @@ public class NetworkCanvas extends SpriteCanvas {
 		layerContainerList.addLayerContainer(layerContainer);
 
 		for (int i = 0; i < numberOfNeurons; i++) {
-			insertNeuron(neuronDescriptor, layerContainerList.getSize() - 1);
+			insertNeuron(neuronDescriptor, layerContainerList.getSize() - 1, false );
 		}
 
 		// Canvas refreshed
 		this.revalidateAndRepaintCoreCanvas();
+		
+		//Inform the registrators thath the NetworkModel has changed
+		for( NetworkModelChangeListener listener: networkModelChangeListenerSet ){
+			listener.elementChanged( this );
+		}
+
 	}
 
 	public void deleteLayer(int layerIndex) {
 
 		layerContainerList.deleteLayer(layerContainerList.getLayerContainer(layerIndex));
 		this.revalidateAndRepaintCoreCanvas();
+		
+		//Inform the registrators thath the NetworkModel has changed
+		for( NetworkModelChangeListener listener: networkModelChangeListenerSet ){
+			listener.elementChanged( this );
+		}
 	}
 
+	public Network getNetwork(){
+		Network network = null;
+		
+		//It Generates Network if there are at least 2 Layers
+		if( layerContainerList.getSize() >= 2 ){
+			
+			network = new Network();
+			
+			//Through the Layers
+			Iterator<LayerContainer> actualLayerContainerIterator = layerContainerList.getIterator();
+			while( actualLayerContainerIterator.hasNext() ){
+				LayerContainer actualLayerContainer = actualLayerContainerIterator.next();				
+				
+				//Here Generates the Layer
+				Layer layer = new Layer();
+				
+				// and added to the Network
+				network.addLayer( layer );
+
+				//Through the Neurons on the Actual Layer
+				Iterator<NeuronContainer> toNeuronContainerIterator = actualLayerContainer.getIterator();
+				while( toNeuronContainerIterator.hasNext() ){
+					NeuronContainer toNeuronContainer = toNeuronContainerIterator.next();
+					
+					//TODO it must depend on the Neuron Type !!!
+					//Here Generates the Neurons
+					layer.addNeuron( new Neuron() );	
+					
+				}
+			}		
+		}
+		
+		return network;
+	}
 }
 
 /**

@@ -38,8 +38,8 @@ public class ConstructionTab  extends JPanel{
 		this.setLayout( new GridBagLayout());
 		GridBagConstraints controlConstraints = new GridBagConstraints();		
 		
-		//Place down the Ruller
-		networkCanvas.placeDownRuler();
+		////Place down the Ruller
+		//networkCanvas.placeDownRuler();
 		
 		//
 		// Define fields

@@ -91,62 +91,10 @@ public class MainPanel extends JFrame{
     	
     	this.setJMenuBar(menuBar);
     	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	MyDataHandler myDataHandler = new MyDataHandler(
-    			new double[][]{{0.1}, {0.15}, {0.2}, {0.35}, {0.4}, {0.45}, {0.5} }, 
-    			new double[][]{{0.1}, {0.15}, {0.2}, {0.35}, {0.4}, {0.45}, {0.5} }
-    	);
-    	int inputLayerSize = 1;
-    	int innerLayerSize1 = 3;
-    	int innerLayerSize2 = 3;
-    	int outputLayerSize = 1;
-    	Layer inputLayer = new Layer();
-    	for( int i = 0; i < inputLayerSize; i++ ){
-    		inputLayer.addNeuron(new Neuron());
-    	}
-    	Layer innerLayer1 = new Layer();
-    	for( int i = 0; i < innerLayerSize1; i++ ){
-    		innerLayer1.addNeuron(new Neuron());
-    	}
-    	Layer innerLayer2 = new Layer();
-    	for( int i = 0; i < innerLayerSize2; i++ ){
-    		innerLayer2.addNeuron(new Neuron());
-    	}
-    	Layer outputLayer = new Layer();
-    	for( int i = 0; i < outputLayerSize; i++ ){
-    		outputLayer.addNeuron(new Neuron());
-    	}
-    	Network myNetwork = new Network();
-    	myNetwork.addLayer( inputLayer );
-    	myNetwork.addLayer( innerLayer1 );
-    	myNetwork.addLayer( innerLayer2 );
-    	myNetwork.addLayer( outputLayer );
-    	  	
-
-    	
-
-    	
-    	
-    	
-
-    	
     	// NetworkCanvas
     	networkCanvas = new NetworkCanvas();
     	//TODO myNetwork and myDataHandler will be removed as parameters
-    	TabbedPanelContainer settingTabbedPanel = new TabbedPanelContainer( networkCanvas, myNetwork, myDataHandler, trainingDataModel, constructionDataModel );
+    	TabbedPanelContainer settingTabbedPanel = new TabbedPanelContainer( networkCanvas, trainingDataModel, constructionDataModel );
     	
     	// Preparation for the SplitPane
     	this.containerPanel = new JPanel();
@@ -171,46 +119,3 @@ public class MainPanel extends JFrame{
 		super.setTitle( "neurnetGUI " + version + title );
 	}
 }
-
-class MyDataHandler extends DataHandler {
-	double[][] input;
-	double[][] output;
-	int pointer = -1;
-	
-	public MyDataHandler( double[][] input, double[][] output ){
-		this.input = input;
-		this.output = output;
-	}
-			
-	public double getExpectedOutput(int outputNeuronIndex) {
-		return output[pointer][outputNeuronIndex];
-	}
-	
-	public double getInput(int inputNeuronIndex) {
-		return input[pointer][inputNeuronIndex];
-	}
-	
-	@Override
-	public void takeNext() {
-		pointer++;
-	}
-	
-	@Override
-	public void reset() {
-		pointer = -1;
-	}
-	
-	@Override
-	public boolean hasNext() {
-		if( pointer + 1 < input.length){
-			return true;
-		}else{
-			return false;
-		}
-	}
-	
-	@Override
-	public double getSize() {
-		return input.length;
-	}
-};

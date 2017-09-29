@@ -23,15 +23,15 @@ public class TabbedPanelContainer extends JTabbedPane{
 	CompositeIcon trainingTabIcon;
 	CompositeIcon constructionTabIcon;
 	
-	public TabbedPanelContainer( NetworkCanvas networkCanvas, Network network, DataHandler trainingDataHandler, TrainingDataModel dataModel, ConstructionDataModel constructionDataModel ){
+	public TabbedPanelContainer( NetworkCanvas networkCanvas, TrainingDataModel trainingDataModel, ConstructionDataModel constructionDataModel ){
 		super(RIGHT);
 		
-		trainingTab = new TrainingTab(network, trainingDataHandler, dataModel);
+		trainingTab = new TrainingTab( networkCanvas, trainingDataModel );
 		VTextIcon trainingTabTextIcon = new VTextIcon(trainingTab, Common.getTranslated("training.title"), VTextIcon.ROTATE_LEFT);
 		Icon trainingTabGraphicIcon = UIManager.getIcon("FileView.computerIcon");
 		trainingTabIcon = new CompositeIcon( trainingTabGraphicIcon, trainingTabTextIcon );
 
-		constructionTab = new ConstructionTab( networkCanvas, constructionDataModel );//network, trainingDataHandler, dataModel);
+		constructionTab = new ConstructionTab( networkCanvas, constructionDataModel );
 		VTextIcon constructionTabTextIcon = new VTextIcon(constructionTab, Common.getTranslated("construction.title"), VTextIcon.ROTATE_LEFT);
 		Icon constructionTabGraphicIcon = UIManager.getIcon("FileView.computerIcon");
 		constructionTabIcon = new CompositeIcon( constructionTabGraphicIcon, constructionTabTextIcon );
