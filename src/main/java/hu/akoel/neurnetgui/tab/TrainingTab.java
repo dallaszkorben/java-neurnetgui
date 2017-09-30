@@ -19,6 +19,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
@@ -45,6 +46,7 @@ import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnet.neuron.Neuron;
 import hu.akoel.neurnet.resultiterator.IResultIterator;
 import hu.akoel.neurnetgui.accessories.Common;
+import hu.akoel.neurnetgui.customelements.CustomErrorDialog;
 import hu.akoel.neurnetgui.datamodels.TrainingDataModel;
 import hu.akoel.neurnetgui.networkcanvas.NetworkCanvas;
 import hu.akoel.neurnetgui.networkcanvas.NetworkModelChangeListener;
@@ -747,39 +749,44 @@ class SelectButtonListener implements ActionListener {
 			//	file = new File(filePath + ".csv");
 			//}
 
-			DataHandler dataHandler = generatesDataHandler( file );
+			try{
+				DataHandler dataHandler = generatesDataHandler( file );
 			
-			//The file is not correct
-			if( null == dataHandler ){
-				trainingTab.setTrainingDataFile( "" );
-				trainingTab.setTrainingDataSize( "" );
+				//The file is not correct
+				if( null == dataHandler ){
+					trainingTab.setTrainingDataFile( "" );
+					trainingTab.setTrainingDataSize( "" );
 
-			//Tha DataHandler is generated
-			}else{	
-
-dataHandler.reset();				
-while ( dataHandler.hasNext() ){
-	dataHandler.takeNext();
-	System.err.println( "Input: " + dataHandler.getInput( 0 ) + " Output: "  +dataHandler.getExpectedOutput( 0 ));
-}
-dataHandler.reset();				
+					//Tha DataHandler is generated
+				}else{	
 				
-				
-				
-				
-				//I write back the trainingDataDirectory
-				trainingTab.getTrainingDataModel().trainingDataDirectory = fc.getCurrentDirectory();
+					//I write back the trainingDataDirectory
+					trainingTab.getTrainingDataModel().trainingDataDirectory = fc.getCurrentDirectory();
 			
-				trainingTab.setTrainingDataFile( file.getName() );
-				trainingTab.setTrainingDataSize( String.valueOf( dataHandler.getSize() ) );
+					//I show the file name and the size on the TrainingTab
+					trainingTab.setTrainingDataFile( file.getName() );
+					trainingTab.setTrainingDataSize( String.valueOf( dataHandler.getSize() ) );
+				}
+
+				trainingTab.setDataHandler(dataHandler);
+				
+			}catch( CSVFormatException f ){
+				//Error Message
+				CustomErrorDialog.showDialog( trainingTab, "Error", f.getMessage(), f.getDetails() );
+				//JOptionPane.showMessageDialog( trainingTab,	f.getMessage(),	"Error",   JOptionPane.ERROR_MESSAGE);
 			}
-
-			trainingTab.setDataHandler(dataHandler);
 
 		}
 	}
 	
-	private DataHandler generatesDataHandler( File file ){
+	/**
+	 * Generates the DataHandler object out of the selected file
+	 * 
+	 * @param file
+	 * @return
+	 * @throws CSVFormatException
+	 */
+	private DataHandler generatesDataHandler( File file ) throws CSVFormatException{
 		String line = "";
         String ioSplitBy = ";;";
         String neuronsSplitBy = ";";
@@ -792,53 +799,93 @@ dataHandler.reset();
         
         ArrayList<double[]> inputArrayList = new ArrayList<double[]>();
         ArrayList<double[]> outputArrayList = new ArrayList<double[]>();
-
-/*        MyDataHandler myDataHandler = new MyDataHandler(
-				new double[][]{{0.1}, {0.15}, {0.2}, {0.35}, {0.4}, {0.45}, {0.5} }, 
-				new double[][]{{0.1}, {0.5}, {0.45}, {0.4}, {0.35}, {0.2}, {0.15} }
-		);        
-*/        
-        BufferedReader br = null;
-		try {
-	        br = new BufferedReader( new FileReader( file ) );
+      
+        //TODO messages must be translated !!!!!!
+        try ( BufferedReader br = new BufferedReader( new FileReader( file ) ) ){
         	while( ( line = br.readLine() ) != null ){
 			
+        		String readingLine = String.valueOf( inputArrayList.size() + 1 );
+        		
 				String[] ioArray = line.split(ioSplitBy);
 
 				//If there is no 1 input and 1 output section
 				if( ioArray.length != 2 ){
-					throw new WrongCSVFormat();
+					throw new CSVFormatException( 
+							Common.getTranslated( "exception.csv.message.noiosections" ),
+							Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine + "</b>" );
 				}
 
+				//
 				//Inputs
+				//
 				String[] inputArray = ioArray[0].split( neuronsSplitBy );
-				if( inputArray.length < 1 ){
-					throw new WrongCSVFormat();
-				}else if( inputs == -1 ){
+				
+				//Check if there is no EMPTY value in the Input list
+				for( int i = 0; i < inputArray.length; i++ ){
+					if( inputArray[ i ].isEmpty() ){
+						throw new CSVFormatException( 
+								Common.getTranslated( "exception.csv.message.emptyinputvalue" ),
+								Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine +
+								"</b> " + Common.getTranslated( "exception.csv.details.label.position") + ":<b>" + i + "</b>");	
+					}
+				}
+				//In the first line it define the necessary number of inputs	
+				if( inputs == -1 ){
 					inputs = inputArray.length;
 				}else if( inputs != inputArray.length ){
-					throw new WrongCSVFormat();
+					throw new CSVFormatException( 
+							Common.getTranslated( "exception.csv.message.differentinputnumbers" ),
+							Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine );
 				}
 				
-				//Outputs
-				String[] outputArray = ioArray[1].split( neuronsSplitBy );
-				if( outputArray.length < 1 ){
-					throw new WrongCSVFormat();
-				}else if( outputs == -1 ){
-					outputs = outputArray.length;
-				}else if( outputs != outputArray.length ){
-					throw new WrongCSVFormat();
-				}
-				
+				//Convert the double
 				double[] inputLine = new double[inputs];
 				for( int i = 0; i < inputArray.length; i++ ){
-					inputLine[ i ] = Double.valueOf( inputArray[ i ] );
+					try{
+						inputLine[ i ] = Double.valueOf( inputArray[ i ] );
+					}catch( NumberFormatException g ){
+						throw new CSVFormatException( 
+								Common.getTranslated( "exception.csv.message.naninput" ),
+								Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine +
+								"</b> " + Common.getTranslated( "exception.csv.details.label.position") + ":<b>" + i + "</b>");
+					}
 				}
-				inputArrayList.add( inputLine );				
+				inputArrayList.add( inputLine );			
 				
+				//
+				//Outputs
+				//
+				String[] outputArray = ioArray[1].split( neuronsSplitBy );
+
+				//Check if there is no EMPTY value in the Output list
+				for( int i = 0; i < outputArray.length; i++ ){
+					if( outputArray[ i ].isEmpty() ){
+						throw new CSVFormatException( 
+								Common.getTranslated( "	" ),
+								Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine +
+								"</b> " + Common.getTranslated( "exception.csv.details.label.position") + ":<b>" + i + "</b>");		
+					}
+				}
+				//In the first line it define the necessary number of inputs
+				if( outputs == -1 ){
+					outputs = outputArray.length;
+				}else if( outputs != outputArray.length ){
+					throw new CSVFormatException( 
+							Common.getTranslated( "exception.csv.message.differentoutputtnumbers" ),
+							Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine );
+				}				
+				
+				//Convert the double
 				double[] outputLine = new double[outputs];
 				for( int i = 0; i < outputArray.length; i++ ){
-					outputLine[ i ] = Double.valueOf( outputArray[ i ] );
+					try{
+						outputLine[ i ] = Double.valueOf( outputArray[ i ] );
+					}catch( NumberFormatException g ){
+						throw new CSVFormatException( 
+								Common.getTranslated( "exception.csv.message.nanoutput" ),
+								Common.getTranslated( "exception.csv.details.label.line") + ":<b>" + readingLine +
+								"</b> " + Common.getTranslated( "exception.csv.details.label.position") + ":<b>" + i + "</b>");
+					}
 				}
 				outputArrayList.add( outputLine );
 			}
@@ -854,26 +901,15 @@ dataHandler.reset();
         	}
 
         	dataHandler = new MyDataHandler(input, output);
-        	
-		
-		} catch (WrongCSVFormat e){
-			wrongFormat = true;
-			e.printStackTrace();
+        
 		} catch (FileNotFoundException e) {
-			wrongFormat = true;
-			e.printStackTrace();
+			throw new CSVFormatException( 
+					Common.getTranslated( "exception.csv.message.filenotfound" ),
+					file.getPath() );
 		} catch (IOException e) {
-			wrongFormat = true;
-			e.printStackTrace();
-		} finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                	wrongFormat = true;
-                    e.printStackTrace();
-                }
-            }
+			throw new CSVFormatException( 
+					Common.getTranslated("exception.csv.message.ioproblem")
+					);
         }
 
 		if( wrongFormat ){
@@ -944,8 +980,23 @@ dataHandler.reset();
 	
 }
 
-class WrongCSVFormat extends Exception{
+class CSVFormatException extends Exception{
 	private static final long serialVersionUID = 8578405306750401849L;
+	private String details;
+	
+	public CSVFormatException( String message, String details ) {
+		super( message );
+		this.details = details;
+	}
+	
+	public CSVFormatException( String message ) {
+		super( message );
+		this.details = null;
+	}
+	
+	public String getDetails(){
+		return details;
+	}
 }
 
 class StartButtonListener implements ActionListener {
