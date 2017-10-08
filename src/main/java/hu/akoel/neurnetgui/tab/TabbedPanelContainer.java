@@ -1,7 +1,5 @@
 package hu.akoel.neurnetgui.tab;
 
-import hu.akoel.neurnet.handlers.DataHandler;
-import hu.akoel.neurnet.network.Network;
 import hu.akoel.neurnetgui.accessories.Common;
 import hu.akoel.neurnetgui.accessories.CompositeIcon;
 import hu.akoel.neurnetgui.accessories.VTextIcon;
@@ -12,13 +10,15 @@ import hu.akoel.neurnetgui.networkcanvas.NetworkCanvas;
 import javax.swing.Icon;
 import javax.swing.JTabbedPane;
 import javax.swing.UIManager;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 public class TabbedPanelContainer extends JTabbedPane{
 
 	private static final long serialVersionUID = -8066765323009172519L;
 
-	private TrainingTab trainingTab;
-	private ConstructionTab constructionTab;
+	private NeurnetTab trainingTab;
+	private NeurnetTab constructionTab;
 		
 	CompositeIcon trainingTabIcon;
 	CompositeIcon constructionTabIcon;
@@ -39,7 +39,21 @@ public class TabbedPanelContainer extends JTabbedPane{
 
 		this.addTab( null, trainingTabIcon, trainingTab );
 		this.addTab( null, constructionTabIcon, constructionTab );
-
+		
+		this.addChangeListener(new ChangeListener() {
+			NeurnetTab previousTab = null;
+			
+			@Override
+	        public void stateChanged(ChangeEvent e) {
+				//int selectedIndex = TabbedPanelContainer.this.getSelectedIndex();
+		
+				NeurnetTab selectedTab = (NeurnetTab)TabbedPanelContainer.this.getSelectedComponent();
+				selectedTab.selected( previousTab );
+				
+				previousTab = selectedTab;
+	        }
+	    });
+		
 		this.setSelectedIndex( 1 );
 	}
 }

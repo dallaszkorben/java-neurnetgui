@@ -22,7 +22,7 @@ import hu.akoel.neurnetgui.verifiers.IntegerVerifier;
  * @author akoel
  *
  */
-public class ConstructionTab  extends JPanel{
+public class ConstructionTab  extends NeurnetTab{
 	private static final long serialVersionUID = -102436776877486921L;
 	
 	private NetworkCanvas networkCanvas;
@@ -149,6 +149,11 @@ public class ConstructionTab  extends JPanel{
 		controlConstraints.weightx = 1;
 		controlConstraints.fill = GridBagConstraints.BOTH;
 		this.add(new JLabel(), controlConstraints );
+	}
+
+	@Override
+	public void selected(NeurnetTab previouslySelected) {
+		
 	}
 
 }

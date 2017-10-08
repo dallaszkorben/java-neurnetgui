@@ -54,26 +54,7 @@ import hu.akoel.neurnetgui.verifiers.IntegerVerifier;
 import hu.akoel.neurnetgui.verifiers.DoubleVerifier;
 import hu.akoel.neurnetgui.verifiers.DoubleStringVerifier;
 
-interface TrainingTabCommunication{
-	public void setNetwork( Network network );
-	public Network getNetwork();
-	public JButton getStartButton();
-	public JButton getStopButton();
-	public JButton getResetWeightsButton();	
-
-	public void setTrainingDataSize( String fileName );
-	public void setTrainingDataFile( String size );
-	
-	public NetworkCanvas getNetworkCanvas();
-	public TrainingDataModel getTrainingDataModel();
-	public ArrayList<ErrorGraphDataPairs> getErrorGraphDataList();
-	
-	public DataHandler getDataHandler();
-	public void setDataHandler( DataHandler dataHandler );
-	
-}
-
-public class TrainingTab extends JPanel implements TrainingTabCommunication{
+public class TrainingTab extends NeurnetTab{
 	private static final long serialVersionUID = 8909396748536386035L;
 	
 	private NetworkCanvas networkCanvas;
@@ -97,13 +78,19 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 	private JTextField fileField;
 	private JTextField sizeField;
 	
-	public MCanvas errorCanvas;
+	private ErrorGraph errorGraph;
 	
 	private JButton startButton;
 	private JButton stopButton;
 	private JButton resetWeightsButton;
+	private JButton selectButton;
+	private JButton viewButton;
+	
+	private TrainingLoopListener trainingLoopListener;
+	private TrainingActivitiListener trainingActivitiListener;
 	
 	private Network network;
+	private boolean isNetworkChanged = true;
 
 	public TrainingTab( NetworkCanvas networkCanvas, TrainingDataModel dataModel ){
 		super();
@@ -158,7 +145,7 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		loopsAfterHandleErrorField.setEditable( true );
 		loopsAfterHandleErrorField.setColumns(LOOPSAFTERHANDLEERROR_FIELD_COLUMNS);
 		loopsAfterHandleErrorField.setText( String.valueOf( dataModel.loopsAfterHandleError.getValue() ) );
-		loopsAfterHandleErrorField.setInputVerifier( new IntegerVerifier( dataModel.loopsAfterHandleError, 100, dataModel.maxTrainingLoop.getValue() ) );
+		loopsAfterHandleErrorField.setInputVerifier( new IntegerVerifier( dataModel.loopsAfterHandleError, 1, dataModel.maxTrainingLoop.getValue() ) );
 
 		// actual Loop
 		JLabel actualLoopLabel = new JLabel( Common.getTranslated("training.label.actualtrainingloop") + ":");
@@ -195,16 +182,19 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		sizeField.setEnabled( false );
 		
 		//Select button
-		JButton selectButton = new JButton( Common.getTranslated( "training.button.select" ) );
+		selectButton = new JButton( Common.getTranslated( "training.button.select" ) );
+		selectButton.setEnabled( false );
 		
 		//View button
-		JButton viewButton = new JButton( Common.getTranslated( "training.button.view" ) );
+		viewButton = new JButton( Common.getTranslated( "training.button.view" ) );
+		viewButton.setEnabled( false );
 
 //		
 		
 		// Start button
 		startButton = new JButton( Common.getTranslated("training.button.start") );
 		startButton.setBackground( Color.green );
+		startButton.setEnabled( false );
 		
 		// Stop button
 		stopButton = new JButton( Common.getTranslated("training.button.stop") );
@@ -214,16 +204,16 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		// Reset button
 		resetWeightsButton = new JButton( Common.getTranslated("training.button.resetweights") );
 		resetWeightsButton.setBackground( Color.yellow );
-		resetWeightsButton.setEnabled( true );
+		resetWeightsButton.setEnabled( false );
 
 		selectButton.addActionListener( new SelectButtonListener( this ) );
 		startButton.addActionListener( new StartButtonListener( this ) );
 		stopButton.addActionListener( new StopButtonListener( this ) );
 		resetWeightsButton.addActionListener( new ResetWeightsButtonListener( this ));
  
-		// Error graph		
-		errorCanvas = ErrorGraph.getCanvas( dataModel.loopsAfterHandleError.getValue(), Double.valueOf( dataModel.maxMeanSquaredError.getValue() ) );
-		errorCanvas.addPainterListenerToHighest( new ErrorGraphPainterListener( this ), MCanvas.Level.ABOVE);
+		// Error graph	
+		errorGraph = new ErrorGraph( this, dataModel.loopsAfterHandleError.getValue(), Double.valueOf( dataModel.maxMeanSquaredError.getValue() ) );
+		//errorGraph.addPainterListenerToHighest( new ErrorGraphPainterListener( this ), MCanvas.Level.ABOVE);
 		
 		//
 		// Place fields
@@ -472,7 +462,7 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		controlConstraints.weightx = 1;
 		controlConstraints.weighty = 1;
 		controlConstraints.fill = GridBagConstraints.BOTH;
-		this.add( errorCanvas, controlConstraints );
+		this.add( errorGraph.getCanvas(), controlConstraints );
 		
 		
 		// Filler
@@ -485,10 +475,10 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		controlConstraints.fill = GridBagConstraints.VERTICAL;
 		//this.add(new JLabel(), controlConstraints );
 		
-		TrainingLoopListener trainingLoopListener = new TrainingLoopListener( dataModel, actualLoopField, actualMSEField, errorCanvas, errorGraphDataList );
-		TrainingActivitiListener trainingActivitiListener = new TrainingActivitiListener( startButton, stopButton, resetWeightsButton );
+		trainingLoopListener = new TrainingLoopListener( dataModel, actualLoopField, actualMSEField, errorGraph.getCanvas(), errorGraphDataList );
+		trainingActivitiListener = new TrainingActivitiListener( this );
 		
-		networkCanvas.addNetworkModelChangeListener( new MyNetworkModelChangeListener( this, trainingLoopListener, trainingActivitiListener ) );
+		networkCanvas.addNetworkModelChangeListener( new MyNetworkModelChangeListener( this ) );
 	}
 	
 	public void setTrainingDataSize( String size ){
@@ -527,10 +517,29 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		return resetWeightsButton;
 	}
 
+	public JButton getSelectButton(){
+		return selectButton;
+	}
+	
+	public JButton getViewButton(){
+		return viewButton;
+	}
+	
 	public NetworkCanvas getNetworkCanvas(){
 		return networkCanvas;
 	}
-	
+
+	public JTextField getActualLoopField(){
+		return actualLoopField;
+	}
+
+	public JTextField getActualMSEField(){
+		return actualMSEField;
+	}
+
+	public ErrorGraph getErrorGraph(){
+		return errorGraph;
+	}
 	public TrainingDataModel getTrainingDataModel(){
 		return dataModel;
 	}
@@ -539,6 +548,75 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
 		return errorGraphDataList;
 	}
 
+	public void setNetworkChanged( boolean isNetworkChanged ){
+		this.isNetworkChanged = isNetworkChanged;
+	}
+	
+	public boolean isNetworkChanged(){
+		return isNetworkChanged;
+	}
+	
+	@Override
+	public void selected(NeurnetTab previouslySelected) {	
+		
+		//if network changed a new network should be created
+		if( isNetworkChanged() ){
+
+			//Get the newly generated Network
+			network = networkCanvas.getNetwork();
+
+			//if the new Network exists
+			if( null != network ){
+				
+				//Make the inner structure of Network 
+				network.initialize();
+			
+				//then it need to be set by listeners
+				network.setTrainingLoopListener( trainingLoopListener );
+				network.setActivityListener( trainingActivitiListener );
+
+				//Enable ResetWeight button
+				getResetWeightsButton().setEnabled( true );
+	
+				//Enable Select button
+				getSelectButton().setEnabled( true );
+
+				//The number of Input/Output of Network are fit to the Training data
+				if( null != getDataHandler() && 
+					network.getInputNeurons() == getDataHandler().getInputSize() &&
+					network.getOutptuNeurons() == getDataHandler().getOutputSize()
+						){
+
+					//then enable Buttons
+					getStartButton().setEnabled( true );
+					
+				//if the Training data do not fit to the Network Input/Output
+				}else{
+
+					//Delete Training Data
+					setDataHandler( null );
+					setTrainingDataFile( "" );
+					setTrainingDataSize( "" );
+				}
+	
+	
+			//if there is no new Network
+			}else{
+
+				//Disable ResetWeight button
+				getResetWeightsButton().setEnabled( false );
+
+				//Disable Select button
+				getSelectButton().setEnabled( false );
+	
+				//Delete Training Data
+				setDataHandler( null );
+				setTrainingDataFile( "" );
+				setTrainingDataSize( "" );
+			}		
+		}
+		setNetworkChanged( false );
+	}
 }
 
 /**
@@ -549,100 +627,56 @@ public class TrainingTab extends JPanel implements TrainingTabCommunication{
  */
 class MyNetworkModelChangeListener implements NetworkModelChangeListener{
 	
-	TrainingTabCommunication trainingTabCommunication;
-	TrainingLoopListener trainingLoopListener;
-	TrainingActivitiListener trainingActivitiListener;
+	private TrainingTab trainingTab;
 
-	public MyNetworkModelChangeListener( 
-			TrainingTabCommunication trainingTabCommunication,
-			TrainingLoopListener trainingLoopListener, 
-			TrainingActivitiListener trainingActivitiListener ){
-		this.trainingTabCommunication = trainingTabCommunication;
-		this.trainingLoopListener = trainingLoopListener;
-		this.trainingActivitiListener = trainingActivitiListener;
+	public MyNetworkModelChangeListener( TrainingTab trainingTab ){
+		this.trainingTab = trainingTab;
 	}
 
+	/**
+	 * The Network Changed
+	 */
 	public void elementChanged( NetworkCanvas networkCanvas ) {
-		Network network = networkCanvas.getNetwork();
-		trainingTabCommunication.setNetwork(network);
 		
-		//TODO torolni a grafikont
-
+		//if anything changed in the model
+		Network network = trainingTab.getNetwork();
 		if( null != network ){
-			network.setTrainingLoopListener( trainingLoopListener );
-			network.setActivityListener( trainingActivitiListener );
-		}else{
-			//TODO letiltani a Start gombot
-			//TODO letiltani a Reset gombot
-			//TODO ha aktiv, akkor letiltani a Stop gobot	
 			
-			//TODO Delete DataHandler
-		}	
+			//then the training should be stopped immediately
+			network.stopTraining();
+		}
+
+		//Disable Butons
+		trainingTab.getStartButton().setEnabled( false );
+		trainingTab.getStopButton().setEnabled( false );
+		
+		//Clear the ErrorGraph
+		trainingTab.getErrorGraph().clear();
+		
+		//Actual Clear Training Loop
+		trainingTab.getActualLoopField().setText( "" );
+		
+		//Clear Actual Mean Squared Error
+		trainingTab.getActualMSEField().setText( "" );
+		
+		trainingTab.setNetworkChanged( true );
 	}		
 }
 
-class ErrorGraphPainterListener implements PainterListener{
-	private TrainingTabCommunication trainingTabCommunication;
-		
-	public ErrorGraphPainterListener(TrainingTabCommunication trainingTabCommunication ){
-		this.trainingTabCommunication = trainingTabCommunication;
-	}
-	
-	public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
-		Iterator<ErrorGraphDataPairs> graphListIterator = trainingTabCommunication.getErrorGraphDataList().iterator();
-		ArrayList<ErrorGraphDataPairs> errorGraphDataList = trainingTabCommunication.getErrorGraphDataList();
-		
-		g2.setColor( Color.red );
-		g2.setStroke( new BasicStroke(1));
-		
-		PositionValue previous = new PositionValue(0, 0);
-		if( graphListIterator.hasNext() ){
-			previous.setX( errorGraphDataList.get(0).getLoop() );
-			previous.setY( errorGraphDataList.get(0).getValue() );
-		}
-		
-		while( graphListIterator.hasNext() ){
-			ErrorGraphDataPairs errorDataPairs = graphListIterator.next();			
-			double y = errorDataPairs.getValue();
-			double x = errorDataPairs.getLoop();
-			g2.drawLine(previous.getX(), previous.getY(), x, y);
-			previous.setX(x);
-			previous.setY(y);
-		}
-		
-		// Transform the Canvas to have the pencil to the right-bottom(1/4 height) position
-		if( null != trainingTabCommunication.getNetwork() && !trainingTabCommunication.getNetwork().isTrainingStopped() && !errorGraphDataList.isEmpty() ){
-			double lastDataValue = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getValue();
-			double neededYDifference = canvas.getWorldYLengthByPixel( canvas.getHeight() ) / 4;
-			double yOffset = neededYDifference -lastDataValue;
-			
-			double lastDataPosition = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getLoop();
-			int xDiffInPixel = canvas.getWidth() - 15;
-			double neededXDifference = canvas.getWorldXLengthByPixel( xDiffInPixel );
-			double xOffset = neededXDifference - lastDataPosition;			
 
-			canvas.setWorldTranslateX( xOffset );
-			canvas.setWorldTranslateY( yOffset );
-		}
-	}
-
-	public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {}	
-}
 
 class ErrorGraph{
 	private double DEL = 50;
 	
+	private TrainingTab trainingTab;
 	private static MCanvas myCanvas = null;
-	int smallestVisibleLoop;
-	double smallestVisibleError;	
+	private int smallestVisibleLoop;
+	private double smallestVisibleError;	
 	
-	private ErrorGraph(int handleErrorCounter, double maxMeanSquaredError){
+	public ErrorGraph( TrainingTab trainingTab, int handleErrorCounter, double maxMeanSquaredError ){
+		this.trainingTab = trainingTab;
 		this.smallestVisibleLoop = handleErrorCounter;
 		this. smallestVisibleError = maxMeanSquaredError / DEL;
-		//String stringFormat = String.valueOf( maxMeanSquaredError );		 
-	}
-		
-	private void generateCanvas(){		
 		
 		Border border = BorderFactory.createLoweredBevelBorder();
 		Color color = Color.black;
@@ -658,7 +692,6 @@ class ErrorGraph{
 		//Grid
 		Color gridColor = new Color(0, 55, 0);
 		int gridWidth = 1;
-		//DeltaValue gridDelta = new DeltaValue( 1000000.0, 0.00001 );
 		DeltaValue gridDelta = new DeltaValue( smallestVisibleLoop * DEL, smallestVisibleError * DEL );
 		Grid.PainterPosition gridPosition = Grid.PainterPosition.DEEPEST;
 		Grid.Type gridType = Grid.Type.SOLID;
@@ -674,6 +707,7 @@ class ErrorGraph{
 		Axis axis = new Axis(myCanvas, axisPosition, axiscolor, axisWidthInPixel, painterPosition);
 		axis.turnOn();
 		
+		//+x +y axis printed
 		myCanvas.addPainterListenerToDeepest( new PainterListener() {
 			
 			public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
@@ -691,15 +725,76 @@ class ErrorGraph{
 			}
 		}, MCanvas.Level.ABOVE );
 		
+		this.addPainterListenerToHighest( new ErrorGraphPainterListener( trainingTab ), MCanvas.Level.ABOVE);
+		
 		myCanvas.repaint();				
 	}
 	
-	public static MCanvas getCanvas( int handleErrorCounter, double maxMeanSquaredError ){
-		if( null == myCanvas ){
-			(new ErrorGraph( handleErrorCounter, maxMeanSquaredError )).generateCanvas();
-		}
+	public void addPainterListenerToHighest( ErrorGraphPainterListener paintListener, MCanvas.Level level ){		
+		myCanvas.addPainterListenerToHighest( paintListener, level );
+	}
+	
+	public MCanvas getCanvas(){
 		return myCanvas;
 	}
+	
+	public void clear(){
+		trainingTab.getErrorGraphDataList().clear();
+		
+		myCanvas.setWorldTranslateX( 0 );
+		myCanvas.setWorldTranslateY( 0 );
+		
+		myCanvas.revalidateAndRepaintCoreCanvas();
+	}
+	
+	class ErrorGraphPainterListener implements PainterListener{
+		private TrainingTab trainingTab;
+			
+		public ErrorGraphPainterListener( TrainingTab trainingTab ){
+			this.trainingTab = trainingTab;
+		}
+		
+		public void paintByWorldPosition(MCanvas canvas, MGraphics g2) {
+			Iterator<ErrorGraphDataPairs> graphListIterator = trainingTab.getErrorGraphDataList().iterator();
+			ArrayList<ErrorGraphDataPairs> errorGraphDataList = trainingTab.getErrorGraphDataList();
+			
+			g2.setColor( Color.red );
+			g2.setStroke( new BasicStroke(1));
+			
+			PositionValue previous = new PositionValue(0, 0);
+			if( graphListIterator.hasNext() ){
+				previous.setX( errorGraphDataList.get(0).getLoop() );
+				previous.setY( errorGraphDataList.get(0).getValue() );
+			}
+			
+			while( graphListIterator.hasNext() ){
+				ErrorGraphDataPairs errorDataPairs = graphListIterator.next();			
+				double y = errorDataPairs.getValue();
+				double x = errorDataPairs.getLoop();
+				g2.drawLine(previous.getX(), previous.getY(), x, y);
+				previous.setX(x);
+				previous.setY(y);
+			}
+			
+			// Transform the Canvas to have the pencil to the right-bottom(1/4 height) position
+			if( null != trainingTab.getNetwork() && !trainingTab.getNetwork().isTrainingStopped() && !errorGraphDataList.isEmpty() ){
+				double lastDataValue = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getValue();
+				double neededYDifference = canvas.getWorldYLengthByPixel( canvas.getHeight() ) / 4;
+				double yOffset = neededYDifference -lastDataValue;
+				
+				double lastDataPosition = errorGraphDataList.get( errorGraphDataList.size() - 1 ).getLoop();
+				int xDiffInPixel = canvas.getWidth() - 15;
+				double neededXDifference = canvas.getWorldXLengthByPixel( xDiffInPixel );
+				double xOffset = neededXDifference - lastDataPosition;			
+
+				canvas.setWorldTranslateX( xOffset );
+				canvas.setWorldTranslateY( yOffset );
+			}
+		}
+
+		public void paintByCanvasAfterTransfer(MCanvas canvas, Graphics2D g2) {}
+	}
+	
 }
 
 /**
@@ -757,7 +852,12 @@ class SelectButtonListener implements ActionListener {
 					trainingTab.setTrainingDataFile( "" );
 					trainingTab.setTrainingDataSize( "" );
 
-					//Tha DataHandler is generated
+					//Buttons
+					trainingTab.getStartButton().setEnabled( false );
+					trainingTab.getResetWeightsButton().setEnabled( false );
+					trainingTab.getStopButton().setEnabled( true );
+
+				//Tha DataHandler is generated
 				}else{	
 				
 					//I write back the trainingDataDirectory
@@ -766,6 +866,12 @@ class SelectButtonListener implements ActionListener {
 					//I show the file name and the size on the TrainingTab
 					trainingTab.setTrainingDataFile( file.getName() );
 					trainingTab.setTrainingDataSize( String.valueOf( dataHandler.getSize() ) );
+					
+					//Buttons
+					trainingTab.getStartButton().setEnabled( true );
+					trainingTab.getResetWeightsButton().setEnabled( true );
+					trainingTab.getStopButton().setEnabled( false );
+
 				}
 
 				trainingTab.setDataHandler(dataHandler);
@@ -773,7 +879,6 @@ class SelectButtonListener implements ActionListener {
 			}catch( CSVFormatException f ){
 				//Error Message
 				CustomErrorDialog.showDialog( trainingTab, "Error", f.getMessage(), f.getDetails() );
-				//JOptionPane.showMessageDialog( trainingTab,	f.getMessage(),	"Error",   JOptionPane.ERROR_MESSAGE);
 			}
 
 		}
@@ -800,7 +905,6 @@ class SelectButtonListener implements ActionListener {
         ArrayList<double[]> inputArrayList = new ArrayList<double[]>();
         ArrayList<double[]> outputArrayList = new ArrayList<double[]>();
       
-        //TODO messages must be translated !!!!!!
         try ( BufferedReader br = new BufferedReader( new FileReader( file ) ) ){
         	while( ( line = br.readLine() ) != null ){
 			
@@ -962,7 +1066,7 @@ class SelectButtonListener implements ActionListener {
 		}
 
 		@Override
-		public int getInputs() {
+		public int getInputSize() {
 			if( input.length > 0 ){
 				return input[0].length;
 			}
@@ -970,14 +1074,13 @@ class SelectButtonListener implements ActionListener {
 		}
 
 		@Override
-		public int getOutputs() {
+		public int getOutputSize() {
 			if( output.length > 0 ){
 				return output[0].length;
 			}
 			return 0;
 		}
-	}
-	
+	}	
 }
 
 class CSVFormatException extends Exception{
@@ -999,43 +1102,56 @@ class CSVFormatException extends Exception{
 	}
 }
 
+/**
+ * Start Button
+ * 
+ * @author akoel
+ *
+ */
 class StartButtonListener implements ActionListener {
-	TrainingTabCommunication trainingTabCommunication;
+	TrainingTab trainingTab;
 	
-	public StartButtonListener( TrainingTabCommunication trainingTabCommunication ){
-		this.trainingTabCommunication = trainingTabCommunication;
+	public StartButtonListener( TrainingTab trainingTab ){
+		this.trainingTab = trainingTab;
 	}
 	
 	public void actionPerformed(ActionEvent e) {
-		
-/*		MyDataHandler myDataHandler = new MyDataHandler(
-				new double[][]{{0.1}, {0.15}, {0.2}, {0.35}, {0.4}, {0.45}, {0.5} }, 
-				new double[][]{{0.1}, {0.5}, {0.45}, {0.4}, {0.35}, {0.2}, {0.15} }
-		);
-*/		
-		DataHandler dataHandler = trainingTabCommunication.getDataHandler();
-		
-		Network network = trainingTabCommunication.getNetwork();
-		
-		//If it not possible to generate Network
-		if( null == network || null == dataHandler ){
+				
+		DataHandler dataHandler = trainingTab.getDataHandler();
+		if( null == dataHandler ){
+			CustomErrorDialog.showDialog( trainingTab, "Error", Common.getTranslated("training.message.notrainingdata"), "" );
 			return;
 		}
 		
-		//TODO check if the input and output neuron numbers comply with the DataHandler
-		
-		trainingTabCommunication.getStartButton().setEnabled( false );
-		trainingTabCommunication.getStopButton().setEnabled(true);
-		trainingTabCommunication.getResetWeightsButton().setEnabled( false );
+		Network network = trainingTab.getNetwork();
+		if( null == network ){
+			CustomErrorDialog.showDialog( trainingTab, "Error", Common.getTranslated("training.message.nonetwork", Common.getTranslated("training.title") ), "" );
+			return;
+		}		
 
-		TrainingDataModel dataModel = trainingTabCommunication.getTrainingDataModel();
+		// Check if the input and output neuron numbers comply with the DataHandler
+		if( network.getInputNeurons() != dataHandler.getInputSize() ){
+			CustomErrorDialog.showDialog( trainingTab, "Error", Common.getTranslated("training.message.wronginputsize" ), "" );
+			return;			
+		}else if( network.getOutptuNeurons() != dataHandler.getOutputSize() ){
+			CustomErrorDialog.showDialog( trainingTab, "Error", Common.getTranslated("training.message.wrongoutputsize" ), "" );
+			return;			
+		}		
+		
+		//Buttons
+		trainingTab.getStartButton().setEnabled( false );
+		trainingTab.getStopButton().setEnabled(true);
+		trainingTab.getResetWeightsButton().setEnabled( false );
+		trainingTab.getSelectButton().setEnabled( false );
+
+		TrainingDataModel dataModel = trainingTab.getTrainingDataModel();
 		
 		network.setLearningRate( dataModel.learningRate.getValue());
 		network.setMomentum( dataModel.momentum.getValue() );
 		network.setMaxTrainingLoop( dataModel.maxTrainingLoop.getValue() );
 		network.setMaxTotalMeanSquareError( Double.valueOf( dataModel.maxMeanSquaredError.getValue() ) );
 		
-		StartTrainingRunnable startingRunnable = new StartTrainingRunnable(network, dataHandler, trainingTabCommunication.getErrorGraphDataList() );
+		StartTrainingRunnable startingRunnable = new StartTrainingRunnable(network, dataHandler, trainingTab.getErrorGraphDataList() );
 		startingRunnable.start();
 		
 		//SwingUtilities.invokeLater(new StartTrainingRunnable(network, trainingDataHandler) );
@@ -1043,27 +1159,32 @@ class StartButtonListener implements ActionListener {
 }
 
 class StopButtonListener implements ActionListener {
-	private TrainingTabCommunication trainingTabCommunication;
+	private TrainingTab trainingTab;
 
-	public StopButtonListener( TrainingTabCommunication trainingTabCommunication ){
-		this.trainingTabCommunication = trainingTabCommunication;
+	public StopButtonListener( TrainingTab trainingTab ){
+		this.trainingTab = trainingTab;
 	}
 	
 	public void actionPerformed(ActionEvent e) {
-		trainingTabCommunication.getNetwork().stopTraining();
+		trainingTab.getStopButton().setEnabled( false );
+		trainingTab.getNetwork().stopTraining();		
 	}	
 }
 
 class ResetWeightsButtonListener implements ActionListener{
 
-	private TrainingTabCommunication trainingTabCommunication;
+	private TrainingTab trainingTab;
 
-	public ResetWeightsButtonListener( TrainingTabCommunication trainingTabCommunication ){
-		this.trainingTabCommunication = trainingTabCommunication;
+	public ResetWeightsButtonListener( TrainingTab trainingTab ){
+		this.trainingTab = trainingTab;
 	}
 	
 	public void actionPerformed(ActionEvent e) {
-		trainingTabCommunication.getNetwork().resetWeights();
+		trainingTab.getNetwork().resetWeights();
+		
+//Clear the ErrorGraph
+trainingTab.getErrorGraph().clear();
+
 	}	
 	
 }
@@ -1079,8 +1200,12 @@ class StartTrainingRunnable extends Thread {
 		this.errorGraphDataList = errorGraphDataList;
 	}
 	public void run() {
+
+		//Set the offset
 		if( errorGraphDataList.size() > 0 ){
 			((TrainingLoopListener)network.getTrainingLoopListener()).setOffset( errorGraphDataList.get(errorGraphDataList.size() - 1 ).getLoop() );
+		}else{
+			((TrainingLoopListener)network.getTrainingLoopListener()).setOffset( 0 );
 		}
 		network.executeTraining(false, trainingDataHandler);
 	}
@@ -1114,8 +1239,9 @@ class TrainingLoopListener implements ILoopListener{
 	}
 	
 	public void handlerError(int loopCounter, double totalMeanSquareError, ArrayList<IResultIterator> resultIteratorArray) {
-		if( loopCounter % dataModel.loopsAfterHandleError.getValue() == 0 ){
-			this.actualLoop.setText( String.valueOf( offset + loopCounter ) );
+		
+		if( (loopCounter + 1) % dataModel.loopsAfterHandleError.getValue() == 0 || ( loopCounter + 1 ) == dataModel.maxTrainingLoop.getValue() ){
+			this.actualLoop.setText( String.valueOf( offset + loopCounter + 1 ) );
 			//String stringFormat = String.valueOf( offset + dataModel.maxMeanSquaredError.getValue() );				
 			//stringFormat = "#0.00" + new String(new char[stringFormat.length()]).replace('\0', '0');
 
@@ -1123,7 +1249,7 @@ class TrainingLoopListener implements ILoopListener{
 			this.actualMSE.setText( String.valueOf( Common.getFormattedDecimal( totalMeanSquareError, stringFormat ) ) );			
 
 			//Add the new Error to the list
-			errorGraphDataList.add( new ErrorGraphDataPairs( offset + loopCounter, totalMeanSquareError ));
+			errorGraphDataList.add( new ErrorGraphDataPairs( offset + loopCounter + 1, totalMeanSquareError ));
 			
 			//Reprint the graph
 			errorCanvas.revalidateAndRepaintCoreCanvas();
@@ -1159,21 +1285,18 @@ class ErrorGraphDataPairs{
  *
  */
 class TrainingActivitiListener implements IActivityListener{
-	private JButton startButton;
-	private JButton stopButton;
-	private JButton resetWeightButton;
+	private TrainingTab trainingTab;
 	
-	public TrainingActivitiListener( JButton startButton, JButton stopButton, JButton resetWeightButton ){
-		this.startButton = startButton;
-		this.stopButton = stopButton;				
-		this.resetWeightButton = resetWeightButton;
+	public TrainingActivitiListener( TrainingTab trainingTab ){
+		this.trainingTab = trainingTab;
 	}
 	public void started() {		
 	}
 	public void stopped() {
-		stopButton.setEnabled( false );
-		startButton.setEnabled( true );	
-		resetWeightButton.setEnabled( true );
+		trainingTab.getStopButton().setEnabled( false );
+		trainingTab.getStartButton().setEnabled( true );	
+		trainingTab.getResetWeightsButton().setEnabled( true );
+		trainingTab.getSelectButton().setEnabled( true );
 	}
 }
 

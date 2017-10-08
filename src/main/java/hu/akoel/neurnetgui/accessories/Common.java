@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Properties;
@@ -97,5 +98,9 @@ Properties prop = new Properties();
 	
 	public static String getTranslated( String string ){		
         return messages.getString(string);
+	}
+	
+	public static String getTranslated( String string, Object... parameters ){
+		return MessageFormat.format( getTranslated( string ), parameters );
 	}
 }
